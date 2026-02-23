@@ -1,0 +1,109 @@
+# Guidebook Entry: Coolant Flow Low
+alarm_id: COOLANT_FLOW_LOW
+name: Coolant Flow Rate Low
+system: Cooling System
+severity: HIGH
+
+description: |
+  Coolant flow rate has dropped below acceptable threshold (<80 L/min). 
+  Normal operating range is 100-120 L/min. This indicates a problem in 
+  the coolant circulation system.
+
+symptoms:
+  - Flow rate sensor reading <80 L/min
+  - Rising battery module temperatures
+  - Pump operating but insufficient flow
+
+root_causes:
+  - cause: Coolant pump motor failure
+    probability: 0.45
+    indicators:
+      - Pump motor current abnormal
+      - Complete flow loss
+      - Pump not responding to commands
+  
+  - cause: Coolant filter blockage
+    probability: 0.30
+    indicators:
+      - Gradual flow reduction
+      - Pressure differential across filter high
+      - Recent increase in particulate contamination
+  
+  - cause: Coolant leak in system
+    probability: 0.15
+    indicators:
+      - Coolant level dropping
+      - Visible coolant around battery room
+      - System pressure low
+  
+  - cause: Air lock in coolant system
+    probability: 0.10
+    indicators:
+      - Intermittent flow
+      - Recent maintenance or coolant change
+      - Gurgling sounds in pipes
+
+immediate_actions:
+  - step: 1
+    action: Check pump motor current and operation status
+    verification: Motor current should be 5-7A if operating normally
+    time_limit: 30 seconds
+  
+  - step: 2
+    action: Reduce battery discharge rate to 60%
+    verification: Power output <2 MW
+    time_limit: 1 minute
+  
+  - step: 3
+    action: Check coolant level in expansion tank
+    verification: Level should be between MIN and MAX marks
+    time_limit: 2 minutes
+  
+  - step: 4
+    action: If flow not restored, switch to backup cooling pump
+    verification: Flow rate >100 L/min after switch
+    time_limit: 5 minutes
+
+diagnostic_steps:
+  - Verify pump motor is running (check current draw)
+  - Check coolant filter pressure drop
+  - Inspect for visible leaks in battery room
+  - Check coolant level in expansion tank
+  - Listen for abnormal pump sounds
+
+related_alarms:
+  triggers:
+    - BATT_OVERTEMP
+    - BATTERY_ROOM_TEMP_HIGH
+  
+  may_also_trigger:
+    - BMS_FAULT_THERMAL
+    - POWER_LIMIT_ACTIVE
+
+causal_relationships:
+  caused_by:
+    - alarm: COOLANT_PUMP_FAULT
+      delay_seconds: 5
+      probability: 0.95
+  
+  causes:
+    - alarm: BATT_OVERTEMP
+      delay_seconds: 10
+      probability: 0.85
+    - alarm: BATTERY_ROOM_TEMP_HIGH
+      delay_seconds: 15
+      probability: 0.60
+
+preventive_maintenance:
+  - Replace coolant filter every 6 months
+  - Check coolant level weekly
+  - Inspect hoses and connections monthly
+  - Flush and replace coolant annually
+
+historical_incidents:
+  - incident_id: INC_2024_032
+    date: 2024-05-12
+    vessel: MV Nordic Star
+    root_cause: Clogged filter
+    resolution: Replaced filter, flow restored
+    downtime_hours: 0.5
