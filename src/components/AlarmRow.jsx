@@ -98,19 +98,29 @@ export default function AlarmRow({ alarm, isSelected, onToggleSelect, isEven, on
         </td>
         {/* Responsibility – grey icons, text black for active / grey for inactive */}
         <td className="px-4 py-3">
-          <span className="inline-flex items-center gap-1.5" style={{ color: respTextColor }}>
-            <img
-              src={alarm.responsibility === 'ECR' ? ECRGreyIcon : BridgeGreyIcon}
-              alt={alarm.responsibility}
-              className="w-3.5 h-3.5"
-            />
-            {alarm.responsibility}
-          </span>
+          {rowVariant === 'child' ? (
+            <span className="text-gray-400">--</span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5" style={{ color: respTextColor }}>
+              <img
+                src={alarm.responsibility === 'ECR' ? ECRGreyIcon : BridgeGreyIcon}
+                alt={alarm.responsibility}
+                className="w-3.5 h-3.5"
+              />
+              {alarm.responsibility}
+            </span>
+          )}
         </td>
         {/* Person: role on top, name below */}
         <td className="px-4 py-3 whitespace-nowrap">
-          <div>{role}</div>
-          {name && <div className="opacity-70">{name}</div>}
+          {rowVariant === 'child' ? (
+            <span className="text-gray-400">--</span>
+          ) : (
+            <>
+              <div>{role}</div>
+              {name && <div className="opacity-70">{name}</div>}
+            </>
+          )}
         </td>
         {/* Appearance: date on top, time below */}
         <td className="px-4 py-3 whitespace-nowrap">

@@ -2,12 +2,10 @@
 let ws = null
 
 export function connectWebSocket(onMessage, onConnectionChange) {
-  // When served via ngrok (HTTPS), connect wss to same host (port 443 default).
-  // When served via Vite dev server (HTTP local), connect directly to :3000.
-  const isSecure   = window.location.protocol === 'https:'
-  const SERVER_URL = isSecure
-    ? `wss://${window.location.host}/ws`       // ngrok → Vite proxy → port 3000
-    : `ws://${window.location.hostname}:3000`  // local dev
+  // Always route WebSocket through the same host+port as the page (Vite proxies /ws → :3000).
+  // This works for localhost, LAN IP (mobile), and ngrok — only one port needs to be reachable.
+  const protocol  = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const SERVER_URL = `${protocol}//${window.location.host}/ws`
   
   ws = new WebSocket(SERVER_URL)
   
@@ -29,8 +27,8 @@ export function connectWebSocket(onMessage, onConnectionChange) {
   ws.onclose = () => {
     console.log('WebSocket disconnected')
     onConnectionChange(false)
-    // 5秒后重连
-    setTimeout(() => connectWebSocket(onMessage, onConnectionChange), 5000)
+    // Reconnect quickly — 1.5 s is enough to avoid jitter without feeling laggy
+    setTimeout(() => connectWebSocket(onMessage, onConnectionChange), 1500)
   }
   
   return ws

@@ -31,6 +31,14 @@ router.get('/', (req, res) => {
   res.json(state.alarms.map(withSuggestions))
 })
 
+// POST /api/alarms/clear-all
+router.post('/clear-all', (req, res) => {
+  state.alarms = []
+  state.sessionLogs = {}
+  broadcast({ type: 'CLEAR_ALL' })
+  res.json({ ok: true })
+})
+
 // GET /api/alarms/database
 router.get('/database', (req, res) => {
   res.json(state.alarms.map(a => ({

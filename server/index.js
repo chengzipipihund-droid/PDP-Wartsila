@@ -11,6 +11,7 @@ import { attachWebSocket } from './websocket.js'
 import alarmRouter from './routes/alarms.js'
 import voiceNoteRouter from './routes/voiceNotes.js'
 import sessionLogRouter from './routes/sessionLog.js'
+import { setupAI } from './ai/index.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -25,6 +26,7 @@ app.use(express.static('public'))
 app.use('/imgs', express.static(path.join(__dirname, '..', 'imgs')))
 
 attachWebSocket(wss)
+setupAI(app, wss)          // AI subsystem — sensor + alarm sequencer + routes
 
 app.use('/api/alarms',     alarmRouter)
 app.use('/api/alarms/:id', sessionLogRouter)

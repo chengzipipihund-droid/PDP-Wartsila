@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { connectWebSocket } from '../services/websocket'
 import RedActive      from '@imgs/red-active.svg'
 import MagentaActive  from '@imgs/magenta-active.svg'
@@ -13,7 +13,7 @@ import BlueInactive   from '@imgs/blue-inactive.svg'
 import ECRGreyIcon    from '@imgs/ECR-grey.svg'
 import BridgeGreyIcon from '@imgs/Bridge-grey.svg'
 import MobileAlarmDetail from './MobileAlarmDetail'
-import { isRoot, CHILD_TO_ROOT, ROOT_TO_GROUP, getVisibleAlarms } from './alarmGroups'
+import { isRoot, CHILD_TO_ROOT, ROOT_TO_GROUP, getVisibleAlarms, registerAIGroup, unregisterAIGroup } from './alarmGroups'
 import AcknowledgeIcon from '@imgs/acknowledge-icon.svg'
 
 // ── Logged-in user ──────────────────────────────────────────
@@ -40,18 +40,27 @@ function fmtTime(iso) {
 }
 
 // ── "Your Responsibility" row ─────────────────────────────────
-function MyAlarmRow({ alarm, onSelect, isSelected, onToggleSelect }) {
+function MyAlarmRow({ alarm, onSelect, isSelected, onToggleSelect, isRootRow, isGroupOpen, childCount, onToggleGroup }) {
   const isActive = alarm.state === 'active'
   const icon     = SEV_ICON[alarm.severity]?.[alarm.state]
 
   return (
     <div className="mb-1">
       <div
-        className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer select-none bg-white active:bg-[#E0E0E0]"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer select-none active:bg-[#E0E0E0]"
+        style={{ background: isRootRow ? '#E3E6E9' : '#FFFFFF' }}
         onClick={() => onSelect(alarm)}
       >
-        {/* Chevron */}
-        <span className="text-gray-400 text-sm w-4 flex-shrink-0">▶</span>
+        {/* Expand chevron for root alarms */}
+        {isRootRow ? (
+          <button
+            className="w-4 h-4 flex-shrink-0 flex items-center justify-center text-[#888] text-[9px] font-bold transition-transform duration-150"
+            style={{ transform: isGroupOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            onClick={e => { e.stopPropagation(); onToggleGroup && onToggleGroup() }}
+          >▶</button>
+        ) : (
+          <span className="w-4 flex-shrink-0" />
+        )}
 
         {/* Checkbox */}
         <input
@@ -133,10 +142,16 @@ function AllAlarmRow({ alarm, onSelect, rowVariant, onToggleGroup, isGroupOpen, 
           {alarm.description}
         </p>
         <div className="flex items-center gap-1 mt-0.5">
-          <img src={RespIcon} alt={alarm.responsibility} className="w-3 h-3 opacity-70" />
-          <span className="text-[11px] text-[#9B9B9B]">
-            {alarm.responsibility} – {personName}
-          </span>
+          {isChild ? (
+            <span className="text-[11px] text-[#C0C0C0]">--</span>
+          ) : (
+            <>
+              <img src={RespIcon} alt={alarm.responsibility} className="w-3 h-3 opacity-70" />
+              <span className="text-[11px] text-[#9B9B9B]">
+                {alarm.responsibility} – {personName}
+              </span>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -158,6 +173,9 @@ export default function MobileApp() {
   const [selectedAlarmId, setSelectedAlarmId] = useState(null)
   const [expandedGroups, setExpandedGroups] = useState(new Set())
   const [selectedAlarms, setSelectedAlarms] = useState(new Set())
+  const [aiGroup, setAiGroup] = useState(null) // { rootId, childIds } | null
+  const [sessionLogs, setSessionLogs] = useState({}) // keyed by alarmId
+  const collapseTimerRef = useRef(null)  // pending 5-s collapse setTimeout id
 
   const toggleGroup = (rootId) => {
     setExpandedGroups(prev => {
@@ -204,19 +222,136 @@ export default function MobileApp() {
   useEffect(() => {
     const ws = connectWebSocket(
       (message) => {
-        if (message.type === 'INIT')   setAlarms(message.data)
+        if (message.type === 'INIT') {
+          // Merge: keep any live AI alarms already in state (INIT only has regular alarms)
+          setAlarms(prev => {
+            const aiAlarms   = prev.filter(a => a._isAIAlarm)
+            const regular    = message.data
+            const regularIds = new Set(regular.map(a => a.id))
+            return [...aiAlarms.filter(a => !regularIds.has(a.id)), ...regular]
+          })
+        }
         if (message.type === 'NEW')    setAlarms(prev => [message.data, ...prev])
         if (message.type === 'UPDATE') setAlarms(prev => prev.map(a => a.id === message.data.id ? message.data : a))
+        if (message.type === 'SESSION_LOG_UPDATE') {
+          setSessionLogs(prev => ({ ...prev, [message.alarmId]: message.entries }))
+        }
+        if (message.type === 'AI_ALARM_TRIGGERED') {
+          const SEV_MAP = { critical: 'red', high: 'yellow', warning: 'yellow' }
+          const a = message.alarm
+          const normalized = {
+            id             : a.id,
+            description    : a.description,
+            severity       : SEV_MAP[a.severity] ?? 'red',
+            state          : 'active',
+            type           : 'Automation',
+            responsibility : 'ECR',
+            person         : 'Chief Engineer - Erik Larsson',
+            appearance     : a.triggeredAt,
+            restore        : null,
+            _isAIAlarm     : true,
+          }
+          // Single atomic update: clear old episode on index 0, then add new alarm
+          setAlarms(prev => {
+            const base = message.index === 0 ? prev.filter(x => !x._isAIAlarm) : prev
+            return [normalized, ...base.filter(x => x.id !== normalized.id)]
+          })
+          // On new episode start, cancel pending timer, collapse any previously expanded AI group
+          if (message.index === 0) {
+            if (collapseTimerRef.current) {
+              clearTimeout(collapseTimerRef.current)
+              collapseTimerRef.current = null
+            }
+            setAiGroup(null)
+            setExpandedGroups(prev => {
+              const next = new Set(prev)
+              for (const id of [...next]) {
+                if (typeof id === 'string' && id.startsWith('AI_')) next.delete(id)
+              }
+              return next
+            })
+          }
+        }
+        if (message.type === 'AI_ANALYSIS_READY') {
+          const { result, alarmIds } = message
+          const rootId   = (alarmIds ?? [])[0] ?? result.rootCauseId
+          const childIds = (alarmIds ?? []).slice(1)
+          result.rootCauseId = rootId
+          // Attach initial suggestions (no confidence yet) to the root cause alarm
+          const initialSuggestions = (result.suggestions ?? []).map(s => ({
+            id        : s.id,
+            title     : s.title,
+            steps     : (s.steps ?? []).map(st => st.text),
+            confidence: null,
+            reasoning : null,
+            sensors   : null,
+          }))
+          setAlarms(prev => prev.map(a =>
+            a.id === rootId ? { ...a, suggestions: initialSuggestions } : a
+          ))
+          // catchUp = episode already done — collapse immediately, no wait
+          const collapseDelay = message.catchUp ? 0 : 5000
+          if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current)
+          collapseTimerRef.current = setTimeout(() => {
+            collapseTimerRef.current = null
+            registerAIGroup(rootId, childIds)  // keep module state for AlarmRow styling
+            setAiGroup({ rootId, childIds })
+          }, collapseDelay)
+        }
+        if (message.type === 'AI_REASONING_READY') {
+          const { suggestionId, rootCauseId, confidence, reasoning, sensorData } = message
+          const sensors = (sensorData ?? []).map(s => ({
+            name   : s.name,
+            current: s.value,
+            normal : s.normalRange,
+            status : s.status,
+          }))
+          setAlarms(prev => prev.map(a => {
+            if (a.id !== rootCauseId) return a
+            const updatedSuggs = (a.suggestions ?? []).map(s =>
+              s.id === suggestionId ? { ...s, confidence, reasoning, sensors } : s
+            )
+            return { ...a, suggestions: updatedSuggs }
+          }))
+        }
+        if (message.type === 'FULL_RESET') {
+          if (collapseTimerRef.current) { clearTimeout(collapseTimerRef.current); collapseTimerRef.current = null }
+          setAlarms(message.data)
+          setAiGroup(null)
+          setSelectedAlarmId(null)
+          setExpandedGroups(new Set())
+          setSessionLogs({})
+        }
+        if (message.type === 'CLEAR_ALL') {
+          if (collapseTimerRef.current) { clearTimeout(collapseTimerRef.current); collapseTimerRef.current = null }
+          setAlarms([])
+          setAiGroup(null)
+          setSelectedAlarmId(null)
+          setExpandedGroups(new Set())
+          setSessionLogs({})
+        }
       },
       () => {} // connection status — not displayed on mobile
     )
     return () => { if (ws) ws.close() }
   }, [])
 
+  // Fetch session log whenever an alarm is opened (same pattern as desktop App.jsx)
+  useEffect(() => {
+    if (selectedAlarmId == null) return
+    fetch(`/api/alarms/${selectedAlarmId}/session-log`)
+      .then(r => r.json())
+      .then(entries => setSessionLogs(prev => ({ ...prev, [selectedAlarmId]: entries })))
+      .catch(() => {})
+  }, [selectedAlarmId])
+
   const sorted = [...alarms].sort((a, b) => new Date(b.appearance) - new Date(a.appearance))
 
-  // My alarms = person matches logged-in user
-  const myAlarms  = sorted.filter(a => a.person === CURRENT_USER)
+  // Apply group-awareness to both sections so children are hidden under root
+  const visibleSorted = getVisibleAlarms(sorted, expandedGroups, aiGroup)
+
+  // My alarms = person matches logged-in user (group-aware: children hidden under root)
+  const myAlarms  = visibleSorted.filter(a => a.person === CURRENT_USER)
   const allAlarms = sorted
 
   // Detail view — always read the live alarm from state so WS updates reflect
@@ -229,6 +364,7 @@ export default function MobileApp() {
       <MobileAlarmDetail
         alarm={selectedAlarm}
         onBack={() => setSelectedAlarmId(null)}
+        serverSessionLog={sessionLogs[selectedAlarm.id] ?? []}
       />
     )
   }
@@ -268,15 +404,24 @@ export default function MobileApp() {
         {myAlarms.length === 0 ? (
           <p className="text-sm text-[#9B9B9B] px-2">No alarms assigned to you.</p>
         ) : (
-          myAlarms.map(alarm => (
-            <MyAlarmRow
-              key={alarm.id}
-              alarm={alarm}
-              onSelect={a => setSelectedAlarmId(a.id)}
-              isSelected={selectedAlarms.has(alarm.id)}
-              onToggleSelect={toggleSelect}
-            />
-          ))
+          myAlarms.map(alarm => {
+            const isAIRoot    = aiGroup && aiGroup.rootId === alarm.id
+            const isRootAlarm = isRoot(alarm.id) || isAIRoot
+            const group       = ROOT_TO_GROUP[alarm.id] ?? (isAIRoot ? aiGroup : null)
+            return (
+              <MyAlarmRow
+                key={alarm.id}
+                alarm={alarm}
+                onSelect={a => setSelectedAlarmId(a.id)}
+                isSelected={selectedAlarms.has(alarm.id)}
+                onToggleSelect={toggleSelect}
+                isRootRow={isRootAlarm}
+                isGroupOpen={isRootAlarm ? expandedGroups.has(alarm.id) : false}
+                childCount={group ? group.childIds.length : 0}
+                onToggleGroup={isRootAlarm ? () => toggleGroup(alarm.id) : undefined}
+              />
+            )
+          })
         )}
       </section>
 
@@ -285,16 +430,17 @@ export default function MobileApp() {
         <div className="flex items-center gap-2 mb-3">
           <span className="font-semibold text-[#1A1A1A] text-base">
             All List&nbsp;
-            <span className="text-[#555555]">({getVisibleAlarms(allAlarms, expandedGroups).length})</span>
+            <span className="text-[#555555]">({getVisibleAlarms(allAlarms, expandedGroups, aiGroup).length})</span>
           </span>
           <FilterSvg />
         </div>
 
-        {getVisibleAlarms(allAlarms, expandedGroups).map(alarm => {
-          const rootId  = CHILD_TO_ROOT[alarm.id]
-          const isChild = rootId !== undefined
-          const isRootAlarm = isRoot(alarm.id)
-          const group = isRootAlarm ? ROOT_TO_GROUP[alarm.id] : null
+        {getVisibleAlarms(allAlarms, expandedGroups, aiGroup).map(alarm => {
+          const isAIChild   = aiGroup && aiGroup.childIds.includes(alarm.id)
+          const isAIRoot    = aiGroup && aiGroup.rootId === alarm.id
+          const isChild     = CHILD_TO_ROOT[alarm.id] !== undefined || isAIChild
+          const isRootAlarm = isRoot(alarm.id) || isAIRoot
+          const group       = ROOT_TO_GROUP[alarm.id] ?? (isAIRoot ? aiGroup : null)
 
           return (
             <AllAlarmRow

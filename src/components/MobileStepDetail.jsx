@@ -36,7 +36,7 @@ const SENSOR_DATA = {
 // Use relative URL so both HTTP (local) and HTTPS (mobile LAN) work via the Vite proxy
 const SERVER = ''
 
-export default function MobileStepDetail({ alarm, suggestion, adjConf, onBack, onNotFeasible, onMarkDone, onVoiceNoteSaved, sessionLog = [], onSelectSuggestion }) {
+export default function MobileStepDetail({ alarm, suggestion, adjConf, onBack, onNotFeasible, onMarkDone, onVoiceNoteSaved, sessionLog = [], serverSessionLog = [], onSelectSuggestion }) {
   const [showLog, setShowLog]   = useState(false)
 
   // ── Voice recording state ─────────────────────────────────────────
@@ -144,7 +144,7 @@ export default function MobileStepDetail({ alarm, suggestion, adjConf, onBack, o
   return (
     <div className="flex flex-col bg-[#F2F2F2]" style={{ position:'fixed', inset:0, maxWidth:480, margin:'0 auto', overflow:'hidden' }}>
 
-      {showLog && <MobileLogModal alarm={alarm} sessionLog={sessionLog} onClose={() => setShowLog(false)} onSelectSuggestion={(s) => { setShowLog(false); onSelectSuggestion?.(s) }} />}
+      {showLog && <MobileLogModal alarm={alarm} sessionLog={sessionLog} serverSessionLog={serverSessionLog} onClose={() => setShowLog(false)} onSelectSuggestion={(s) => { setShowLog(false); onSelectSuggestion?.(s) }} />}
 
       {/* ── Dark header ──────────────────────────────────── */}
       <header style={{ background: '#3B3D3F' }} className="flex-shrink-0">

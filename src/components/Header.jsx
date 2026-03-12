@@ -44,7 +44,7 @@ function SeverityCount({ icon, count }) {
   )
 }
 
-export default function Header({ stats, activeSeverities = new Set(), activeResps = new Set(), onOpenDatabase }) {
+export default function Header({ stats, activeSeverities = new Set(), activeResps = new Set(), onOpenDatabase, onSimulateAnomaly, onReset, onClearAll }) {
   const {
     total = 0,
     active = 0,
@@ -155,6 +155,27 @@ export default function Header({ stats, activeSeverities = new Set(), activeResp
         )}
 
         <span className="flex-1" />
+        <button
+          onClick={onSimulateAnomaly}
+          className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
+          style={{ background: '#8B0000', color: '#FFD0D0' }}
+        >
+          ⚡ Simulate Anomaly
+        </button>
+        <button
+          onClick={onReset}
+          className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
+          style={{ background: '#4A5568', color: '#E2E8F0' }}
+        >
+          ↺ Reset
+        </button>
+        <button
+          onClick={onClearAll}
+          className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
+          style={{ background: '#2D3748', color: '#E2E8F0' }}
+        >
+          ✕ Clear All
+        </button>
         <button
           onClick={onOpenDatabase}
           className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"

@@ -3,7 +3,7 @@ import AlarmRow from './AlarmRow'
 import { ROOT_IDS, CHILD_TO_ROOT, ROOT_TO_GROUP, isRoot, getVisibleAlarms } from './alarmGroups'
 import AcknowledgeIcon from '@imgs/acknowledge-icon.svg'
 
-export default function AlarmList({ alarms, selectedAlarms, setSelectedAlarms, onRowClick, selectedAlarmId, expandedGroups, toggleGroup, onAcknowledge }) {
+export default function AlarmList({ alarms, selectedAlarms, setSelectedAlarms, onRowClick, selectedAlarmId, expandedGroups, toggleGroup, onAcknowledge, aiGroup }) {
 
   const toggleSelectAll = (e) => {
     if (e.target.checked) {
@@ -37,18 +37,21 @@ export default function AlarmList({ alarms, selectedAlarms, setSelectedAlarms, o
   const allSelected = alarms.length > 0 && selectedAlarms.size === alarms.length
 
   // Build visible rows: roots are followed immediately by their children (if expanded)
-  const flatAlarms = getVisibleAlarms(alarms, expandedGroups)
+  const flatAlarms = getVisibleAlarms(alarms, expandedGroups, aiGroup)
 
   const visibleRows = flatAlarms.map(alarm => {
-    const rootId  = CHILD_TO_ROOT[alarm.id]
-    const isChild = rootId !== undefined
+    // Check both module-level state AND the aiGroup prop for root/child status
+    const isAIChild  = aiGroup && aiGroup.childIds.includes(alarm.id)
+    const isAIRoot   = aiGroup && aiGroup.rootId === alarm.id
+    const rootId     = CHILD_TO_ROOT[alarm.id]
+    const isChild    = rootId !== undefined || isAIChild
 
     if (isChild) {
       return { alarm, rowVariant: 'child', expandCell: null }
     }
 
-    if (isRoot(alarm.id)) {
-      const group      = ROOT_TO_GROUP[alarm.id]
+    if (isRoot(alarm.id) || isAIRoot) {
+      const group      = ROOT_TO_GROUP[alarm.id] ?? aiGroup
       const isOpen     = expandedGroups.has(alarm.id)
       const childCount = group.childIds.length
       return {

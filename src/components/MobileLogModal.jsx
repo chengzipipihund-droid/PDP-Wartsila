@@ -2,9 +2,22 @@
 import { useState, useRef, useEffect } from 'react'
 
 // ── Voice Note playback card ──────────────────────────────────────────────
-function VoiceNotePlayer({ voiceNote }) {
+// src  = blob URL (locally recorded) OR server endpoint URL
+// serverId = server voice note ID, used to fetch duration if not already known
+function VoiceNotePlayer({ src, serverId, duration: initDuration }) {
   const [playing, setPlaying] = useState(false)
+  const [duration, setDuration] = useState(initDuration ?? null)
   const audioRef = useRef(null)
+
+  // If no duration supplied and we have a server ID, fetch it
+  useEffect(() => {
+    if (duration == null && serverId) {
+      fetch(`/api/voice-notes/${serverId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.duration != null) setDuration(data.duration) })
+        .catch(() => {})
+    }
+  }, [serverId])
 
   const fmtDur = (s) => s == null ? null : s < 60 ? `${Math.round(s)}s` : `${Math.floor(s / 60)}m ${s % 60}s`
 
@@ -17,7 +30,8 @@ function VoiceNotePlayer({ voiceNote }) {
 
   return (
     <div className="flex items-center gap-3 bg-white border border-[#C8CDD1] rounded-lg px-3 py-2">
-      <audio ref={audioRef} src={voiceNote.blobUrl} type={voiceNote.mimeType} onEnded={() => setPlaying(false)} />
+      <audio ref={audioRef} src={src} onEnded={() => setPlaying(false)}
+        onLoadedMetadata={e => { if (isFinite(e.target.duration)) setDuration(e.target.duration) }} />
       <button
         onClick={toggle}
         className="w-8 h-8 rounded-full bg-[#E9E9E9] flex items-center justify-center flex-shrink-0 hover:bg-[#DADADA] transition-colors text-sm"
@@ -27,7 +41,7 @@ function VoiceNotePlayer({ voiceNote }) {
       </button>
       <div className="flex-1 min-w-0">
         <div className="text-xs text-[#333333]">
-          Voice note{voiceNote.duration != null ? <span className="text-[#9B9B9B]"> · {fmtDur(voiceNote.duration)}</span> : null}
+          Voice note{duration != null ? <span className="text-[#9B9B9B]"> · {fmtDur(duration)}</span> : null}
         </div>
       </div>
     </div>
@@ -62,21 +76,24 @@ function fmtDateHeader(iso) {
   return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-export default function MobileLogModal({ alarm, sessionLog = [], onClose, onSelectSuggestion }) {
+export default function MobileLogModal({ alarm, sessionLog = [], serverSessionLog, onClose, onSelectSuggestion }) {
   const logEntries = buildLog(alarm)
   const dateLabel  = fmtDateHeader(alarm.appearance)
 
-  // Fetch server session log on open — server is source of truth for done/NF entries
-  const [serverLog, setServerLog]   = useState(null) // null = loading
+  // If parent passes serverSessionLog, use it directly (WS-synced); otherwise fetch on open
+  const [fetchedLog, setFetchedLog] = useState(serverSessionLog != null ? null : null)
   useEffect(() => {
+    if (serverSessionLog != null) return  // parent handles it
     fetch(`/api/alarms/${alarm.id}/session-log`)
       .then(r => r.json())
-      .then(entries => setServerLog(entries))
-      .catch(() => setServerLog([]))
-  }, [alarm.id])
+      .then(entries => setFetchedLog(entries))
+      .catch(() => setFetchedLog([]))
+  }, [alarm.id, serverSessionLog])
+
+  const rawServerLog = serverSessionLog ?? fetchedLog  // prefer prop, fall back to fetch
 
   // Map server entries to display format, enriching with local blob URLs for voice notes
-  const displayLog = (serverLog ?? []).map(srv => {
+  const displayLog = (rawServerLog ?? []).map(srv => {
     // Find all local voice notes that match server IDs in this entry
     const matchedLocalNotes = sessionLog
       .flatMap(e => e.voiceNotes ?? [])
@@ -95,18 +112,15 @@ export default function MobileLogModal({ alarm, sessionLog = [], onClose, onSele
   })
 
   // While server is loading, fall back to local state so there's no blank flash
-  // After server responds, use server entries as truth + overlay local voice note blobs
-  // Also keep local isDone/isNotFeasible entries until the POST roundtrip confirms them on server
   const localExtra = sessionLog.filter(e => {
     if (e.isDone || e.isNotFeasible) {
-      // Keep until server has a matching terminal entry for this suggestion
       return !displayLog.some(d =>
         d.suggestion.title === e.suggestion?.title && (d.isDone || d.isNotFeasible)
       )
     }
     return e.voiceNote?.blobUrl && !displayLog.some(d => d.voiceNote?.blobUrl === e.voiceNote.blobUrl)
   })
-  const combinedLog = serverLog === null ? sessionLog : [...displayLog, ...localExtra]
+  const combinedLog = rawServerLog === null ? sessionLog : [...displayLog, ...localExtra]
 
   return (
     /* Full-screen backdrop */
@@ -215,6 +229,18 @@ export default function MobileLogModal({ alarm, sessionLog = [], onClose, onSele
                             <span className="text-[11px] font-medium text-[#333]">Mark as Done</span>
                           </div>
                           {entry.operator && <p className="text-[11px] text-[#9B9B9B]">by {entry.operator}</p>}
+                          {(entry.voiceNotes ?? []).map((vn, i) => (
+                            <div key={'l' + i} className="mt-2" onClick={e => e.stopPropagation()}>
+                              <VoiceNotePlayer src={vn.blobUrl} duration={vn.duration} />
+                            </div>
+                          ))}
+                          {(entry.serverVoiceNoteIds ?? [])
+                            .filter(id => !(entry.voiceNotes ?? []).some(vn => vn.voiceNoteServerId === id))
+                            .map(id => (
+                              <div key={'s' + id} className="mt-2" onClick={e => e.stopPropagation()}>
+                                <VoiceNotePlayer src={`/api/voice-notes/${id}/audio`} serverId={id} />
+                              </div>
+                            ))}
                         </div>
                       ) : entry.isNotFeasible ? (
                         <div className="bg-white border border-[#C8CDD1] rounded-lg px-3 py-2.5">
@@ -227,6 +253,18 @@ export default function MobileLogModal({ alarm, sessionLog = [], onClose, onSele
                             <span className="text-[11px] font-medium text-red-500">Mark as Not Feasible</span>
                           </div>
                           {entry.operator && <p className="text-[11px] text-[#9B9B9B]">by {entry.operator}</p>}
+                          {(entry.voiceNotes ?? []).map((vn, i) => (
+                            <div key={'l' + i} className="mt-2" onClick={e => e.stopPropagation()}>
+                              <VoiceNotePlayer src={vn.blobUrl} duration={vn.duration} />
+                            </div>
+                          ))}
+                          {(entry.serverVoiceNoteIds ?? [])
+                            .filter(id => !(entry.voiceNotes ?? []).some(vn => vn.voiceNoteServerId === id))
+                            .map(id => (
+                              <div key={'s' + id} className="mt-2" onClick={e => e.stopPropagation()}>
+                                <VoiceNotePlayer src={`/api/voice-notes/${id}/audio`} serverId={id} />
+                              </div>
+                            ))}
                         </div>
                       ) : entry.isAcknowledge ? (
                         <span className="text-xs text-[#333333]">{entry.suggestion.title}</span>
@@ -241,16 +279,19 @@ export default function MobileLogModal({ alarm, sessionLog = [], onClose, onSele
                             <span className="text-[#9B9B9B] text-xs flex-shrink-0">›</span>
                           </div>
 
-                          {/* voice note inside card */}
+                        {/* voice note inside card — local blob first, then server endpoint for any remaining IDs */}
                           {(entry.voiceNotes ?? []).map((vn, i) => (
-                            <div
-                              key={i}
-                              className="mt-2"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <VoiceNotePlayer voiceNote={vn} />
+                            <div key={'l' + i} className="mt-2" onClick={e => e.stopPropagation()}>
+                              <VoiceNotePlayer src={vn.blobUrl} duration={vn.duration} />
                             </div>
                           ))}
+                          {(entry.serverVoiceNoteIds ?? [])
+                            .filter(id => !(entry.voiceNotes ?? []).some(vn => vn.voiceNoteServerId === id))
+                            .map(id => (
+                              <div key={'s' + id} className="mt-2" onClick={e => e.stopPropagation()}>
+                                <VoiceNotePlayer src={`/api/voice-notes/${id}/audio`} serverId={id} />
+                              </div>
+                            ))}
                         </div>
                       )}
                     </div>

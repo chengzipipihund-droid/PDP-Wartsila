@@ -6,7 +6,8 @@ import alarmsData from './data/alarms.js'
 import { SUGGESTIONS } from './data/suggestions.js'
 
 export const state = {
-  alarms:               alarmsData,          // array — may be mutated in-place
+  alarms:               [],                  // TEMP: emptied for AI testing — restore with: alarmsData
+  aiAlarms:             [],                  // AI episode alarms (not in state.alarms)
   voiceNotes:           [],
   voiceNoteSeq:         1,
   sessionLogs:          {},   // { [alarmId]: entry[] }

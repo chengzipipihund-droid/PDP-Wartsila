@@ -263,6 +263,9 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
       return updated
     })
     // Delete the "opened" session log entry, then add a not-feasible entry
+    // Carry any voice note IDs attached to the entry being deleted
+    const existingEntry = sessionLog.find(e => e.id === sid)
+    const voiceNoteIds  = existingEntry?.voiceNoteIds ?? []
     if (sid) {
       try { await fetch(`/api/alarms/${alarm.id}/session-log/${sid}`, { method: 'DELETE' }) }
       catch (e) { console.error('session-log DELETE failed', e) }
@@ -271,7 +274,7 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
       await fetch(`/api/alarms/${alarm.id}/mark-not-feasible`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ suggestionTitle: s.title, suggestionConfidence: s.confidence, operator: alarm.person ?? null }),
+        body: JSON.stringify({ suggestionTitle: s.title, suggestionConfidence: s.confidence, operator: alarm.person ?? null, voiceNoteIds }),
       })
     } catch (err) { console.error('mark-not-feasible failed', err) }
   }
@@ -293,6 +296,9 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
       })
       return updated
     })
+    // Carry any voice note IDs attached to the entry being deleted
+    const existingEntry2 = sessionLog.find(e => e.id === sid)
+    const voiceNoteIds2  = existingEntry2?.voiceNoteIds ?? []
     if (sid) {
       try { await fetch(`/api/alarms/${alarm.id}/session-log/${sid}`, { method: 'DELETE' }) }
       catch (e) { console.error('session-log DELETE failed', e) }
@@ -301,7 +307,7 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
       await fetch(`/api/alarms/${alarm.id}/mark-done`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ suggestionTitle: s.title, suggestionConfidence: s.confidence, operator: alarm.person ?? null }),
+        body: JSON.stringify({ suggestionTitle: s.title, suggestionConfidence: s.confidence, operator: alarm.person ?? null, voiceNoteIds: voiceNoteIds2 }),
       })
     } catch (err) { console.error('mark-done failed', err) }
   }
@@ -325,6 +331,8 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
   const logEntries   = buildLog(alarm)
   const dateLabel    = fmtDateHeader(alarm.appearance)
   const personOptions = buildPersonOptions(allAlarms)
+  // ECR alarms → Log only; Bridge alarms → Suggested Steps (with Log toggle)
+  const showSuggestions = !isECR
 
   // Derive responsibility from allAlarms for the selected person
   const respForPerson = (personVal) => {
@@ -495,6 +503,11 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
                             <span className="text-[11px] font-medium text-red-500">Mark as Not Feasible</span>
                           </div>
                           {entry.operator && <p className="text-[11px] text-[#9B9B9B]">by {entry.operator}</p>}
+                          {(entry.voiceNoteIds ?? []).map(id => (
+                            <div key={id} className="mt-2" onClick={e => e.stopPropagation()}>
+                              <VoiceNotePlayer voiceNoteId={id} />
+                            </div>
+                          ))}
                         </div>
                       ) : isDone ? (
                         <div className="bg-white border border-[#C8CDD1] rounded-lg px-3 py-2.5">
@@ -507,6 +520,11 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
                             <span className="text-[11px] font-medium text-[#333]">Mark as Done</span>
                           </div>
                           {entry.operator && <p className="text-[11px] text-[#9B9B9B]">by {entry.operator}</p>}
+                          {(entry.voiceNoteIds ?? []).map(id => (
+                            <div key={id} className="mt-2" onClick={e => e.stopPropagation()}>
+                              <VoiceNotePlayer voiceNoteId={id} />
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <div className="bg-white border border-[#C8CDD1] rounded-lg px-3 py-2">
@@ -530,7 +548,7 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
       )}
 
       {/* ── Bridge Suggested Steps ─────────────────────────── */}
-      {!isECR && !selectedSuggestion && (
+      {showSuggestions && !selectedSuggestion && (
         <div className="flex-1 pt-1 pb-2">
           {/* Header row with Log button */}
           <div className="flex items-center justify-between px-5 pb-3">
@@ -545,33 +563,57 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
           <div className="px-5">
           {(() => {
             const visible = (alarm.suggestions ?? [])
-              .filter(s => s.confidence > 50 && !dismissedSuggestions.has(s.title))
-              .sort((a, b) => b.confidence - a.confidence)
+              .filter(s => {
+                if (dismissedSuggestions.has(s.title)) return false
+                // Include loading suggestions (confidence === null) and high-enough conf ones
+                if (s.confidence === null) return true
+                return s.confidence > 50
+              })
+              .sort((a, b) => {
+                // loading (null) goes last; otherwise descending confidence
+                if (a.confidence === null && b.confidence === null) return 0
+                if (a.confidence === null) return 1
+                if (b.confidence === null) return -1
+                return b.confidence - a.confidence
+              })
             if (visible.length === 0) return (
               <p className="text-xs text-[#9B9B9B]">No high-confidence suggestions available.</p>
             )
             return visible.map((s, i) => {
-              const adjConf    = Math.min(99, Math.max(1, s.confidence + (confidenceAdjust[s.title] ?? 0)))
-              const isHighConf = adjConf >= 75
+              const isLoading  = s.confidence === null
+              const adjConf    = isLoading ? null : Math.min(99, Math.max(1, s.confidence + (confidenceAdjust[s.title] ?? 0)))
+              const isHighConf = adjConf != null && adjConf >= 75
               const confColor  = isHighConf ? '#22c55e' : '#f97316'
               const confLabel  = isHighConf ? 'High' : 'Medium'
               return (
                 <div
                   key={i}
                   className="mb-3 bg-[#E9E9E9] rounded-lg px-4 pt-3 pb-4 cursor-pointer hover:bg-[#E0E0E0] active:bg-[#DADADA] transition-colors"
-                  onClick={() => openSuggestion(s)}
+                  onClick={() => !isLoading && openSuggestion(s)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] text-[#9B9B9B]">Option {i + 1}</span>
-                    <span className="text-[11px] font-semibold" style={{ color: confColor }}>
-                      Confidence: {adjConf}% ({confLabel})
-                    </span>
+                    {isLoading ? (
+                      <span className="text-[11px] font-semibold text-[#9B9B9B] animate-pulse">Analyzing…</span>
+                    ) : (
+                      <span className="text-[11px] font-semibold" style={{ color: confColor }}>
+                        Confidence: {adjConf}% ({confLabel})
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm font-bold text-[#111111] mb-3">{s.title}</p>
-                  <div className="flex gap-2 items-start">
-                    <img src={RobotLogo} alt="AI" className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                    <p className="text-xs text-[#555555] leading-snug flex-1">{s.reasoning}</p>
-                  </div>
+                  {!isLoading && s.reasoning && (
+                    <div className="flex gap-2 items-start">
+                      <img src={RobotLogo} alt="AI" className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-[#555555] leading-snug flex-1">{s.reasoning}</p>
+                    </div>
+                  )}
+                  {isLoading && (
+                    <div className="flex gap-2 items-center">
+                      <img src={RobotLogo} alt="AI" className="w-5 h-5 flex-shrink-0 animate-pulse" />
+                      <p className="text-xs text-[#9B9B9B] italic">AI is calculating confidence…</p>
+                    </div>
+                  )}
                 </div>
               )
             })
@@ -581,7 +623,7 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
       )}
 
       {/* ── Bridge Suggestion Detail ────────────────────────── */}
-      {!isECR && selectedSuggestion && (() => {
+      {showSuggestions && selectedSuggestion && (() => {
         const s        = selectedSuggestion
         const isHigh   = s.confidence >= 75
         const confColor = isHigh ? '#22c55e' : '#f97316'
@@ -694,7 +736,7 @@ export default function AlarmDetailPanel({ alarm, onClose, allAlarms, sessionLog
       <div className="h-6" />
 
       {/* ── Log overlay ───────────────────────────────────── */}
-      {!isECR && showLog && (
+      {showSuggestions && showLog && (
         <DesktopLogPanel
           alarm={alarm}
           sessionLog={sessionLog}

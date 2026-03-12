@@ -5,6 +5,9 @@ import { broadcast } from '../websocket.js'
 
 const router = Router()
 
+// Preserve string IDs (e.g. 'AI_A1') and parse numeric IDs to numbers
+const parseAlarmId = (raw) => /^\d+$/.test(raw) ? parseInt(raw, 10) : raw
+
 const noteMeta = (n) => ({
   id: n.id, alarmId: n.alarmId, suggestionTitle: n.suggestionTitle,
   timestamp: n.timestamp, duration: n.duration, operator: n.operator, transcript: n.transcript,
@@ -12,8 +15,10 @@ const noteMeta = (n) => ({
 
 // POST /api/alarms/:id/voice-notes
 router.post('/alarms/:id/voice-notes', (req, res) => {
-  const alarmId = parseInt(req.params.id)
+  const alarmId = parseAlarmId(req.params.id)
+  // Check both regular alarms and AI episode alarms
   const alarm   = state.alarms.find(a => a.id === alarmId)
+             ?? state.aiAlarms.find(a => a.id === alarmId)
   if (!alarm) return res.status(404).json({ error: 'Alarm not found' })
 
   const { suggestionTitle, timestamp, duration, mimeType, audio, operator, transcript } = req.body
@@ -44,7 +49,7 @@ router.post('/alarms/:id/voice-notes', (req, res) => {
 
 // GET /api/alarms/:id/voice-notes
 router.get('/alarms/:id/voice-notes', (req, res) => {
-  const alarmId = parseInt(req.params.id)
+  const alarmId = parseAlarmId(req.params.id)
   res.json(
     state.voiceNotes
       .filter(n => n.alarmId === alarmId)

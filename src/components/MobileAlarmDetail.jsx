@@ -21,6 +21,24 @@ const SEV_ICON = {
   blue:    { active: BlueActive,    inactive: BlueInactive },
 }
 
+// ── Log helpers (same as MobileLogModal / AlarmDetailPanel) ──
+function buildLog(alarm) {
+  const app = alarm.appearance ? new Date(alarm.appearance) : null
+  const fmt = (d) => d ? d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'
+  const entries = [
+    { time: fmt(app), text: `Appearance and assign to ${alarm.person?.split(' - ').pop() ?? 'crew'} – ${alarm.responsibility}`, done: true },
+  ]
+  if (alarm.restore) {
+    entries.push({ time: fmt(new Date(alarm.restore)), text: 'Alarm restored – system returned to normal range', done: true })
+  }
+  return entries
+}
+
+function fmtDateHeader(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 const SENSOR_DATA = {
   red:     { name: 'ME Lube Oil Pressure Sensor',          value: '1.2 bar ↓', normal: 'normal: 2.5–4.0 bar' },
   magenta: { name: 'Auxiliary Engine Coolant Temperature', value: '102 °C ↑',  normal: 'normal: 70–90 °C'   },
@@ -29,41 +47,22 @@ const SENSOR_DATA = {
   blue:    { name: 'Bilge Level Sensor – Frame 60',        value: '340 mm ↑',  normal: 'normal: < 100 mm'   },
 }
 
-export default function MobileAlarmDetail({ alarm, onBack }) {
+export default function MobileAlarmDetail({ alarm, onBack, serverSessionLog = [] }) {
   const [selectedSuggestion, setSelectedSuggestion] = useState(null)
   const [showLog, setShowLog] = useState(false)
-  const [sessionLog, setSessionLog] = useState([])
+  const [sessionLog, setSessionLog] = useState([])  // local blobs only (voice notes recorded this session)
   const [dismissedSuggestions, setDismissedSuggestions] = useState(new Set())
   const [confidenceAdjust, setConfidenceAdjust]         = useState({})
   const currentLogIdRef   = useRef(null)
   const currentServerIdRef = useRef(null)
-
-  // Load acknowledge entries already recorded on the server (e.g. acknowledged before opening detail)
-  useEffect(() => {
-    fetch(`/api/alarms/${alarm.id}/session-log`)
-      .then(r => r.json())
-      .then(entries => {
-        const ackEntries = entries
-          .filter(e => e.type === 'acknowledge')
-          .map(e => ({
-            id: e.id,
-            openedAt: new Date(e.openedAt),
-            suggestion: { title: e.suggestionTitle, confidence: null },
-            voiceNotes: [],
-            isAcknowledge: true,
-          }))
-        if (ackEntries.length > 0) {
-          setSessionLog(prev => [...ackEntries, ...prev])
-        }
-      })
-      .catch(() => {})
-  }, [alarm.id])
+  const pendingVoiceNoteIdsRef = useRef([])  // voice note IDs queued before session log POST resolves
 
   function openSuggestion(s) {
     const localId  = Date.now()
     const openedAt = new Date()
     currentLogIdRef.current    = localId
     currentServerIdRef.current = null
+    pendingVoiceNoteIdsRef.current = []  // reset queue for new suggestion
 
     setSessionLog(prev => [
       ...prev.filter(e => e.voiceNotes?.length > 0 || e.isDone || e.isNotFeasible || e.isAcknowledge),
@@ -82,7 +81,18 @@ export default function MobileAlarmDetail({ alarm, onBack }) {
       }),
     })
       .then(r => r.json())
-      .then(entry => { currentServerIdRef.current = entry.id })
+      .then(entry => {
+        currentServerIdRef.current = entry.id
+        // Flush any voice notes that were uploaded before this POST resolved
+        for (const vnId of pendingVoiceNoteIdsRef.current) {
+          fetch(`/api/alarms/${alarm.id}/session-log/${entry.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ voiceNoteId: vnId }),
+          }).catch(() => {})
+        }
+        pendingVoiceNoteIdsRef.current = []
+      })
       .catch(() => {})
   }
 
@@ -99,20 +109,23 @@ export default function MobileAlarmDetail({ alarm, onBack }) {
   async function handleMarkDone() {
     const s = selectedSuggestion
     if (!s) return
+    // Collect any voice notes already attached to the current local entry
+    const currentEntry    = sessionLog.find(e => e.id === currentLogIdRef.current)
+    const existingVoices  = currentEntry?.voiceNotes ?? []
     setSessionLog(prev => [
       ...prev.filter(e => e.voiceNotes?.length > 0 || e.isDone || e.isNotFeasible || e.isAcknowledge),
       {
         id: Date.now(),
         openedAt: new Date(),
         suggestion: s,
-        voiceNotes: [],
+        voiceNotes: existingVoices,
         isDone: true,
         operator: alarm.person ?? null,
       }
     ])
     setSelectedSuggestion(null)
     setDismissedSuggestions(prev => new Set([...prev, s.title]))
-    // Nudge confidence of remaining suggestions (same as Not Feasible)
+    // Nudge confidence of remaining suggestions
     setConfidenceAdjust(prev => {
       const updated = { ...prev }
       ;(alarm.suggestions ?? []).forEach(sx => {
@@ -127,11 +140,15 @@ export default function MobileAlarmDetail({ alarm, onBack }) {
     if (srvId) {
       fetch(`/api/alarms/${alarm.id}/session-log/${srvId}`, { method: 'DELETE' }).catch(() => {})
     }
+    // Pass voice note IDs so the done entry carries them
+    const voiceNoteIds = existingVoices
+      .map(v => v.voiceNoteServerId)
+      .filter(id => id != null)
     try {
       await fetch(`/api/alarms/${alarm.id}/mark-done`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ suggestionTitle: s.title, suggestionConfidence: s.confidence, operator: alarm.person ?? null }),
+        body: JSON.stringify({ suggestionTitle: s.title, suggestionConfidence: s.confidence, operator: alarm.person ?? null, voiceNoteIds }),
       })
     } catch (e) { console.error('mark-done failed', e) }
   }
@@ -139,6 +156,9 @@ export default function MobileAlarmDetail({ alarm, onBack }) {
   async function handleNotFeasible() {
     const s = selectedSuggestion
     if (!s) return
+    // Collect any voice notes already attached to the current local entry
+    const currentEntry   = sessionLog.find(e => e.id === currentLogIdRef.current)
+    const existingVoices = currentEntry?.voiceNotes ?? []
     // Navigate back immediately, keeping a not-feasible entry in local log
     setSessionLog(prev => [
       ...prev.filter(e => e.voiceNotes?.length > 0 || e.isDone || e.isNotFeasible || e.isAcknowledge),
@@ -146,7 +166,7 @@ export default function MobileAlarmDetail({ alarm, onBack }) {
         id: Date.now(),
         openedAt: new Date(),
         suggestion: s,
-        voiceNotes: [],
+        voiceNotes: existingVoices,
         isNotFeasible: true,
         operator: alarm.person ?? null,
       }
@@ -170,12 +190,16 @@ export default function MobileAlarmDetail({ alarm, onBack }) {
     if (srvId) {
       fetch(`/api/alarms/${alarm.id}/session-log/${srvId}`, { method: 'DELETE' }).catch(() => {})
     }
+    // Pass voice note IDs so the not-feasible entry carries them
+    const voiceNoteIds = existingVoices
+      .map(v => v.voiceNoteServerId)
+      .filter(id => id != null)
     // Log not-feasible event
     try {
       await fetch(`/api/alarms/${alarm.id}/mark-not-feasible`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ suggestionTitle: s.title, suggestionConfidence: s.confidence, operator: alarm.person ?? null }),
+        body: JSON.stringify({ suggestionTitle: s.title, suggestionConfidence: s.confidence, operator: alarm.person ?? null, voiceNoteIds }),
       })
     } catch (e) { console.error('mark-not-feasible failed', e) }
   }
@@ -187,13 +211,19 @@ export default function MobileAlarmDetail({ alarm, onBack }) {
     ))
 
     // Attach voice note id on server entry → triggers broadcast to desktop
-    const srvId = currentServerIdRef.current
-    if (srvId && data.voiceNoteServerId) {
-      fetch(`/api/alarms/${alarm.id}/session-log/${srvId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voiceNoteId: data.voiceNoteServerId }),
-      }).catch(() => {})
+    if (data.voiceNoteServerId) {
+      const srvId = currentServerIdRef.current
+      if (srvId) {
+        // Session log entry already exists — PATCH immediately
+        fetch(`/api/alarms/${alarm.id}/session-log/${srvId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ voiceNoteId: data.voiceNoteServerId }),
+        }).catch(() => {})
+      } else {
+        // Session log POST not yet resolved — queue for when it does
+        pendingVoiceNoteIdsRef.current = [...pendingVoiceNoteIdsRef.current, data.voiceNoteServerId]
+      }
     }
   }
 
@@ -212,8 +242,81 @@ export default function MobileAlarmDetail({ alarm, onBack }) {
         onMarkDone={handleMarkDone}
         onVoiceNoteSaved={handleVoiceNoteSaved}
         sessionLog={sessionLog}
+        serverSessionLog={serverSessionLog}
         onSelectSuggestion={openSuggestion}
       />
+    )
+  }
+
+  // ── Bridge alarm: show log view (suggestions handled on desktop) ──
+  if (alarm.responsibility !== 'ECR') {
+    const logEntries = buildLog(alarm)
+    const dateLabel  = fmtDateHeader(alarm.appearance)
+    return (
+      <div className="flex flex-col bg-[#F2F2F2]" style={{ position: 'fixed', inset: 0, maxWidth: 480, margin: '0 auto', overflow: 'hidden' }}>
+        {/* Dark header */}
+        <header style={{ background: '#3B3D3F' }} className="flex-shrink-0">
+          <div className="flex items-center gap-2 px-4 pt-4 pb-1">
+            <button
+              onClick={onBack}
+              className="text-[#9B9B9B] hover:text-white transition-colors text-lg leading-none flex-shrink-0 pr-1"
+              aria-label="Back"
+            >←</button>
+            <span className="text-xs text-[#9B9B9B] uppercase tracking-wide flex-1">Alarm Detail</span>
+          </div>
+          <div className="flex items-start gap-3 px-4 pt-2 pb-5">
+            {icon && <img src={icon} alt={alarm.severity} className="w-6 h-6 flex-shrink-0 mt-0.5" />}
+            <h1 className="text-base font-bold text-white leading-snug flex-1">{alarm.description}</h1>
+          </div>
+        </header>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto px-4 pt-4 pb-8" style={{ WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
+          {/* Sensor reading card */}
+          {sensor && (
+            <div className="rounded-lg bg-[#E9E9E9] flex items-center justify-between px-4 py-3 gap-3 mb-4">
+              <span className="text-xs text-[#333333] leading-snug flex-1">{sensor.name}</span>
+              <div className="text-right flex-shrink-0">
+                <div className="text-sm font-bold text-red-600">{sensor.value}</div>
+                <div className="text-[10px] text-[#9B9B9B]">{sensor.normal}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Log section */}
+          <p className="text-sm font-semibold text-[#9B9B9B] mb-1">Log</p>
+          <p className="text-xs font-semibold text-[#555555] mb-3">{dateLabel}</p>
+
+          <div className="relative">
+            <div className="absolute left-[11px] top-0 bottom-0 w-px bg-[#C8CDD1]" />
+            <div className="space-y-4">
+              {logEntries.map((entry, i) => (
+                <div key={i} className="flex gap-3 items-start relative">
+                  <div
+                    className={`w-[22px] h-[22px] rounded-full border-2 flex-shrink-0 z-10 flex items-center justify-center ${
+                      entry.done ? 'bg-white border-[#C8CDD1]' : 'bg-[#E8E8E8] border-[#C8CDD1]'
+                    }`}
+                    style={{ marginTop: 1 }}
+                  >
+                    {entry.done && <div className="w-2 h-2 rounded-full bg-[#9B9B9B]" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs text-[#9B9B9B] mr-2">{entry.time}</span>
+                    {!entry.done ? (
+                      <div className="mt-1 flex items-center justify-between bg-white border border-[#C8CDD1] rounded px-3 py-2">
+                        <span className="text-xs text-[#333333]">{entry.text}</span>
+                        <span className="text-[#9B9B9B] ml-2 text-xs">▾</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-[#333333]">{entry.text}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     )
   }
 
@@ -224,7 +327,7 @@ export default function MobileAlarmDetail({ alarm, onBack }) {
   return (
     <div className="flex flex-col bg-[#F2F2F2]" style={{ position:'fixed', inset:0, maxWidth:480, margin:'0 auto', overflow:'hidden' }}>
 
-      {showLog && <MobileLogModal alarm={alarm} sessionLog={sessionLog} onClose={() => setShowLog(false)} onSelectSuggestion={(s) => { setShowLog(false); openSuggestion(s) }} />}
+      {showLog && <MobileLogModal alarm={alarm} sessionLog={sessionLog} serverSessionLog={serverSessionLog} onClose={() => setShowLog(false)} onSelectSuggestion={(s) => { setShowLog(false); openSuggestion(s) }} />}
 
       {/* ── Dark header ──────────────────────────────────── */}
       <header style={{ background: '#3B3D3F' }} className="flex-shrink-0">

@@ -5,15 +5,18 @@ import { broadcast } from '../websocket.js'
 
 const router = Router({ mergeParams: true })  // access :id from parent
 
+// Preserve string IDs (e.g. 'AI_A1') and parse numeric IDs to numbers
+const parseAlarmId = (raw) => /^\d+$/.test(raw) ? parseInt(raw, 10) : raw
+
 // GET /api/alarms/:id/session-log
 router.get('/session-log', (req, res) => {
-  const alarmId = parseInt(req.params.id)
+  const alarmId = parseAlarmId(req.params.id)
   res.json(state.sessionLogs[alarmId] ?? [])
 })
 
 // POST /api/alarms/:id/session-log
 router.post('/session-log', (req, res) => {
-  const alarmId = parseInt(req.params.id)
+  const alarmId = parseAlarmId(req.params.id)
   const { suggestionTitle, suggestionConfidence, openedAt } = req.body
   const entry = {
     id:                   state.sessionLogSeq++,
@@ -31,8 +34,8 @@ router.post('/session-log', (req, res) => {
 
 // POST /api/alarms/:id/mark-done
 router.post('/mark-done', (req, res) => {
-  const alarmId = parseInt(req.params.id)
-  const { suggestionTitle, suggestionConfidence, operator } = req.body
+  const alarmId = parseAlarmId(req.params.id)
+  const { suggestionTitle, suggestionConfidence, operator, voiceNoteIds } = req.body
 
   if (!state.successOverrides[alarmId]) state.successOverrides[alarmId] = {}
   state.successOverrides[alarmId][suggestionTitle] = (state.successOverrides[alarmId][suggestionTitle] ?? 0) + 1
@@ -44,7 +47,7 @@ router.post('/mark-done', (req, res) => {
     openedAt:             new Date().toISOString(),
     suggestionTitle:      suggestionTitle      ?? '',
     suggestionConfidence: suggestionConfidence ?? 0,
-    voiceNoteIds:         [],
+    voiceNoteIds:         Array.isArray(voiceNoteIds) ? voiceNoteIds : [],
     eventType:            'done',
     operator:             operator ?? null,
   }
@@ -55,8 +58,8 @@ router.post('/mark-done', (req, res) => {
 
 // POST /api/alarms/:id/mark-not-feasible
 router.post('/mark-not-feasible', (req, res) => {
-  const alarmId = parseInt(req.params.id)
-  const { suggestionTitle, suggestionConfidence, operator } = req.body
+  const alarmId = parseAlarmId(req.params.id)
+  const { suggestionTitle, suggestionConfidence, operator, voiceNoteIds } = req.body
 
   if (!state.notFeasibleOverrides[alarmId]) state.notFeasibleOverrides[alarmId] = {}
   state.notFeasibleOverrides[alarmId][suggestionTitle] = (state.notFeasibleOverrides[alarmId][suggestionTitle] ?? 0) + 1
@@ -68,7 +71,7 @@ router.post('/mark-not-feasible', (req, res) => {
     openedAt:             new Date().toISOString(),
     suggestionTitle:      suggestionTitle      ?? '',
     suggestionConfidence: suggestionConfidence ?? 0,
-    voiceNoteIds:         [],
+    voiceNoteIds:         Array.isArray(voiceNoteIds) ? voiceNoteIds : [],
     eventType:            'not_feasible',
     operator:             operator ?? null,
   }
@@ -80,7 +83,7 @@ router.post('/mark-not-feasible', (req, res) => {
 
 // DELETE /api/alarms/:id/session-log/:entryId
 router.delete('/session-log/:entryId', (req, res) => {
-  const alarmId = parseInt(req.params.id)
+  const alarmId = parseAlarmId(req.params.id)
   const entryId = parseInt(req.params.entryId)
   if (state.sessionLogs[alarmId]) {
     state.sessionLogs[alarmId] = state.sessionLogs[alarmId].filter(e => e.id !== entryId)
@@ -91,7 +94,7 @@ router.delete('/session-log/:entryId', (req, res) => {
 
 // PATCH /api/alarms/:id/session-log/:entryId
 router.patch('/session-log/:entryId', (req, res) => {
-  const alarmId = parseInt(req.params.id)
+  const alarmId = parseAlarmId(req.params.id)
   const entryId = parseInt(req.params.entryId)
   const entries = state.sessionLogs[alarmId] ?? []
   const idx     = entries.findIndex(e => e.id === entryId)
