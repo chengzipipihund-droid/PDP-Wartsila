@@ -1,0 +1,44 @@
+/* ═══════════════════════════════════════════════════════════
+   浮窗：AI 能源优化器 | Energy Optimizer Widget
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Button idle pulse glow ── */
+@keyframes eo-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(79,191,101,0.25), 0 4px 16px rgba(0,0,0,0.3); }
+  50%       { box-shadow: 0 0 20px rgba(79,191,101,0.55), 0 4px 16px rgba(0,0,0,0.3); }
+}
+
+/* ── Thinking dots bounce ── */
+@keyframes eo-dot {
+  0%, 80%, 100% { transform: scale(0.55); opacity: 0.3; }
+  40%            { transform: scale(1);    opacity: 1;   }
+}
+
+/* ── Panel slide up on appear ── */
+@keyframes eo-slide-up {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Step line stream in ── */
+@keyframes eo-step-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Accept success flash ── */
+@keyframes eo-flash {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* ── Optimization badge pulse on EnergyIndex ── */
+@keyframes eo-badge-in {
+  from { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+}
+@keyframes eo-badge-glow {
+  0%, 100% { box-shadow: 0 0 6px rgba(79,191,101,0.4);  }
+  50%       { box-shadow: 0 0 14px rgba(79,191,101,0.85); }
+}

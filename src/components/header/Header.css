@@ -1,0 +1,169 @@
+/* ===== 主 Header ===== */
+.header {
+  display: flex;
+  align-items: stretch;   /* 子元素撑满 40px 高度 */
+  height: 40px;
+  background: #3B3D3F;   /* SVG 中的深灰背景色 */
+  font-size: 14px;
+}
+
+/* ── 左侧白色梯形 ─────────────────────────────── */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 32px 0 9px;  /* 右侧留出斜边空间 */
+  background: white;
+  /* 斜边：右上角 → 右下角左移 22px，与 SVG 中 247-224.665≈22px 匹配 */
+  clip-path: polygon(0 0, 100% 0, calc(100% - 22px) 100%, 0 100%);
+  flex-shrink: 0;
+  color: #222;
+}
+
+.header-logo {
+  height: 35px;
+}
+
+.header-title {
+  font-weight: 750;
+  font-size: 16px;
+  white-space: nowrap;
+  color: #222;
+}
+
+/* ── 中间深色区域 ──────────────────────────────── */
+.header-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 0 24px;
+}
+
+.header-info {
+  color: #ccc;
+  font-size: 13px;
+}
+
+.alarm-text {
+  color: #ff0000;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* ── 右侧绿色梯形 ─────────────────────────────── */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;  /* 减少间距让元素左移 */
+  padding: 0 24px 0 50px; /* 左侧留出斜边空间，向左移动50px */
+  margin-left: 0; /* 向左移动绿色块 */
+  background: #4FBF65;    /* SVG 中的绿色 */
+  /* 斜边：左上角右移 22px → 左下角(0,100%)，与 SVG 中 692.5-669.95≈22px 匹配 */
+  clip-path: polygon(22px 0, 100% 0, 100% 100%, 0 100%);
+  flex-shrink: 0;
+  color: white;
+}
+
+.header-autopilot-label {
+  font-weight: 750;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.header-active-for {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.header-autopilot-time {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.header-robot-icon {
+  height: 35px;
+  width: 35px;
+  margin-left: 5px;  /* 推到最右边 */
+  opacity: 1.0;
+}
+
+/* ===== 副 Header (第二行) ===== */
+.sub-header {
+  display: flex;
+  align-items: center;
+  background: #53575A;
+  color: #E6E9EC;
+  padding: 0 16px;
+  height: 50px;
+  font-size: 13px;
+}
+
+.subheader-left {
+  display: flex;
+  align-items: center;
+  align-self: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.subheader-mode-icon {
+  height: 38px;
+  width: auto;
+  display: block;
+}
+
+.subheader-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.subheader-right {
+  display: flex;
+  align-items: center;
+  gap: 100px;
+  flex: 1;
+  margin-left: auto;
+}
+
+.subheader-icon {
+  font-size: 16px;
+}
+
+.subheader-icon-mic {
+  height: 24px;
+  width: 24px;
+}
+
+.subheader-mic-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.subheader-mic-icon {
+  height: 20px;
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.subheader-mic-bar {
+  height: 24px;
+  width: 152px;
+  flex-shrink: 0;
+}
+
+.subheader-icon-wifi {
+  height: 24px;
+  width: 24px;
+}
+
+.subheader-wifi-container {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+  flex-shrink: 0;
+}

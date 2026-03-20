@@ -1,0 +1,92 @@
+.bottombar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #4a4a4a;
+  padding: 0 16px;
+  height: 50px;                /* matches Mode3.svg bottom bar = 50px */
+}
+
+.bottombar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bottombar-label {
+  color: white;
+  font-size: 14px;
+}
+
+/* ===== Toggle 开关 ===== */
+.toggle-switch {
+  position: relative;
+  width: 72px;
+  height: 28px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  transition: background 0.3s;
+}
+
+.toggle-switch.off {
+  background: #888;
+}
+
+.toggle-switch.on {
+  background: #4CAF50;
+}
+
+.toggle-knob {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  transition: left 0.3s;
+}
+
+.toggle-switch.off .toggle-knob {
+  left: 4px;
+}
+
+.toggle-switch.on .toggle-knob {
+  left: 46px;
+}
+
+.toggle-text {
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ===== 搜索框 ===== */
+.bottombar-right {
+  display: flex;
+  align-items: center;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #3a3a3a;
+  border: 1px solid #666;
+  border-radius: 4px;
+  padding: 4px 16px;
+  color: #999;
+  font-size: 13px;
+  min-width: 200px;
+}
+.search-box input {
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 13px;
+  width: 100%;
+}

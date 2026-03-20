@@ -1,0 +1,58 @@
+/* layout for main engine panel */
+.main-engine-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 0;
+  background: #F7F7F7;
+  overflow: hidden;
+}
+
+.engine-header {
+  height: 32px;                /* Mode3.svg: panel header = 32px */
+  flex-shrink: 0;
+  background: #D3D3D3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #999;
+  white-space: nowrap;
+}
+
+.engine-content {
+  display: flex;
+  align-items: stretch;        /* both columns same height */
+  gap: 15px;
+  padding: 8px;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.engine-large {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+
+.engine-large img {
+  width: auto;
+  height: auto;                /* natural size: ME1 = 255×128 */
+  display: block;
+}
+
+.engine-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 0 0 auto;
+}
+
+.engine-list img {
+  width: auto;
+  height: auto;                /* natural size: ME2/3/4 = 147×35 */
+  display: block;
+}

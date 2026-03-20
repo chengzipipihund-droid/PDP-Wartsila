@@ -1,0 +1,48 @@
+.databoard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: #F7F7F7;
+  overflow: hidden;
+}
+
+.databoard-header {
+  height: 32px;                /* Mode3.svg: panel header = 32px */
+  flex-shrink: 0;
+  background: #D3D3D3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #999;
+  white-space: nowrap;
+}
+
+.databoard-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.databoard-gauge {
+  height: auto;                /* natural: Databoard 193×140 */
+  width: auto;
+  display: block;
+}
+
+.databoard-mode {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  height: auto;                /* natural: Mode 64×31 */
+  width: auto;
+  display: block;
+}

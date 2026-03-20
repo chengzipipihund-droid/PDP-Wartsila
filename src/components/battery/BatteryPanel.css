@@ -1,0 +1,72 @@
+.battery-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #F7F7F7;
+  overflow: hidden;
+}
+
+.battery-header {
+  height: 32px;                /* Mode3.svg: panel header = 32px */
+  flex-shrink: 0;
+  background: #D3D3D3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #999;
+  white-space: nowrap;
+}
+
+.battery-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 8px;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.battery-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.percentage-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 60px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  background-color: #EFEFEF;
+}
+
+.battery-percentage {
+  font-size: 24px;
+  font-weight: bold;
+  color: #000;
+  text-align: center;
+  white-space: nowrap;
+  font-family: Arial, sans-serif;
+}
+
+.battery-arrow {
+  width: auto;
+  height: auto;                /* natural: arrow 37×111 */
+  display: block;
+}
+
+.battery-icon {
+  width: auto;
+  height: auto;                /* natural: BatteryIcon 238×119 */
+  display: block;
+  align-self: center;
+}
