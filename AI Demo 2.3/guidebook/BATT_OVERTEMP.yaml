@@ -1,0 +1,117 @@
+# Guidebook Entry: Battery Module Overtemperature
+alarm_id: BATT_OVERTEMP
+name: Battery Module Overtemperature
+system: Battery ESS
+severity: CRITICAL
+
+description: |
+  One or more battery modules have exceeded safe operating temperature (>40°C).
+  This can lead to thermal runaway if not addressed immediately.
+
+symptoms:
+  - Battery cell temperature >40°C
+  - Rising temperature trend despite cooling
+  - Reduced battery performance
+  - BMS limiting power output
+
+root_causes:
+  - cause: Cooling system failure
+    probability: 0.60
+    indicators:
+      - Coolant flow low or absent
+      - Coolant pump fault
+      - Heat exchanger fouling
+  
+  - cause: High discharge rate + ambient heat
+    probability: 0.25
+    indicators:
+      - Battery discharge >3 MW
+      - Ambient temperature >28°C
+      - HVAC not maintaining setpoint
+  
+  - cause: Internal cell fault (early thermal runaway)
+    probability: 0.10
+    indicators:
+      - Single cell temperature spike
+      - Cell voltage drop
+      - Abnormal resistance increase
+  
+  - cause: BMS calibration error
+    probability: 0.05
+    indicators:
+      - Temperature reading inconsistent
+      - Multiple sensors showing same value
+      - Recent BMS update or maintenance
+
+immediate_actions:
+  - step: 1
+    action: Reduce discharge rate to 50% immediately
+    verification: Power output <1.5 MW
+    time_limit: Immediate
+  
+  - step: 2
+    action: Increase coolant flow if possible
+    verification: Flow rate >120 L/min
+    time_limit: 30 seconds
+  
+  - step: 3
+    action: If temperature >45°C, initiate emergency shutdown
+    verification: Battery contactors open
+    time_limit: Immediate
+  
+  - step: 4
+    action: Monitor for thermal runaway indicators
+    verification: No smoke, no voltage collapse, no rapid temp rise
+    time_limit: Continuous
+
+diagnostic_steps:
+  - Check individual cell temperatures via BMS
+  - Verify coolant flow and temperature
+  - Inspect battery room HVAC operation
+  - Review discharge history (last 30 minutes)
+  - Check for physical damage or swelling
+
+related_alarms:
+  triggers:
+    - BMS_FAULT_THERMAL
+    - POWER_LIMIT_ACTIVE
+  
+  may_also_trigger:
+    - CELL_VOLTAGE_IMBALANCE
+    - MAIN_BUS_UNDERVOLT
+
+causal_relationships:
+  # This alarm is typically caused by
+  caused_by:
+    - alarm: COOLANT_PUMP_FAULT
+      delay_seconds: 15
+      probability: 0.60
+    - alarm: COOLANT_FLOW_LOW
+      delay_seconds: 10
+      probability: 0.55
+    - alarm: BATTERY_ROOM_TEMP_HIGH
+      delay_seconds: 20
+      probability: 0.30
+  
+  # This alarm causes these
+  causes:
+    - alarm: BMS_FAULT_THERMAL
+      delay_seconds: 20
+      probability: 0.75
+    - alarm: POWER_LIMIT_ACTIVE
+      delay_seconds: 25
+      probability: 0.70
+
+preventive_maintenance:
+  - Monitor battery temperature trends daily
+  - Check cooling system weekly
+  - Replace coolant annually
+  - Calibrate temperature sensors every 6 months
+
+historical_incidents:
+  - incident_id: INC_2023_089
+    date: 2023-11-08
+    vessel: MV Sealink
+    root_cause: Coolant pump failure
+    resolution: Replaced pump, temperature returned to normal
+    downtime_hours: 1.5
