@@ -11,6 +11,13 @@
 import { useState, useEffect, useRef } from 'react'
 import RobotLogo from '@imgs/robot-logo.svg'
 
+// Format elapsed time in ms to readable string
+function formatElapsedTime(ms) {
+  if (ms < 1000) return `${Math.round(ms)}ms`
+  const seconds = (ms / 1000).toFixed(1)
+  return `${seconds}s`
+}
+
 // Format groupResult into readable terminal lines
 function buildOutputLines(groupResult) {
   if (!groupResult) return []
@@ -29,7 +36,7 @@ function buildOutputLines(groupResult) {
   return lines
 }
 
-export default function AIAlarmBanner ({ status, alarmCount, totalAlarms, groupResult, thinkingText = '', suggestingDone = 0, totalSuggestions = 0, currentSuggestionTitle = '' }) {
+export default function AIAlarmBanner ({ status, alarmCount, totalAlarms, groupResult, thinkingText = '', suggestingDone = 0, totalSuggestions = 0, currentSuggestionTitle = '', elapsedMs = 0 }) {
   const [expanded, setExpanded] = useState(false)
   const [logLines, setLogLines] = useState([])   // live lines accumulated during analysing
   const termRef                 = useRef(null)
@@ -109,11 +116,20 @@ export default function AIAlarmBanner ({ status, alarmCount, totalAlarms, groupR
           className="w-80 rounded-xl shadow-2xl overflow-hidden border border-[#3B3D3F]"
           style={{ background: '#1A1C1E' }}
         >
-          {/* Title bar */}
-          <div className="flex items-center px-3 py-2 border-b border-[#2E3033]">
+          {/* Title bar with timer */}
+          <div className="flex items-center justify-between px-3 py-2 border-b border-[#2E3033]">
             <span className="text-[10px] text-[#666] font-mono">
               {isReady ? 'ai_output' : status === 'suggesting' ? 'ai_suggestions' : 'ai_reasoning'}
             </span>
+            {/* Timer in top-right */}
+            {(isPulsing || isReady) && (
+              <span 
+                className="text-[9px] font-mono font-bold whitespace-nowrap text-white"
+                title="AI analysis elapsed time"
+              >
+                {formatElapsedTime(elapsedMs)}
+              </span>
+            )}
           </div>
           {/* Terminal body */}
           <div

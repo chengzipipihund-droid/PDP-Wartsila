@@ -33,7 +33,7 @@ export function setupAI (app, wss) {
   // ── Wire sequencer (listens to sensorSimulator events) ────────────────────
   new AlarmSequencer(wss, store)
 
-  // ── Register catch-up hook: replay current AI state to newly connected clients ──
+  // Register catch-up hook: replay current AI state to newly connected clients ──
   setNewClientHook(() => {
     const msgs = []
     const alarms = store.activeAIAlarms ?? []
@@ -69,11 +69,29 @@ export function setupAI (app, wss) {
       })
       if (store.aiSuggestionsReady) msgs.push({ type: 'AI_SUGGESTIONS_READY' })
     }
+    // Replay sensor status
+    msgs.push({
+      type: 'SENSOR_STATUS',
+      status: {
+        connected: sensorSimulator.serialReady,
+        message: sensorSimulator.serialReady ? 'Connected' : 'Disconnected',
+      },
+    })
     return msgs
   })
 
   // ── Start sensor polling (no-op if already running) ───────────────────────
   sensorSimulator.start()
+
+  // Broadcast live sensor readings to connected clients (for UI display)
+  sensorSimulator.on('reading', ({ temp, timestamp }) => {
+    broadcast({ type: 'SENSOR_READING', temp, timestamp })
+  })
+
+  // Broadcast sensor connection status (connected/disconnected)
+  sensorSimulator.on('serial-status', (status) => {
+    broadcast({ type: 'SENSOR_STATUS', status })
+  })
 
   // ── Routes ────────────────────────────────────────────────────────────────
 

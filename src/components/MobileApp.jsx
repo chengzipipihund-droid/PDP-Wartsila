@@ -314,6 +314,26 @@ export default function MobileApp() {
             return { ...a, suggestions: updatedSuggs }
           }))
         }
+        if (message.type === 'AI_SUGGESTION_THINKING_START') {
+          // Optional: could show progress indicator on mobile
+          // Mobile UI already updates via AI_REASONING_READY
+        }
+        if (message.type === 'AI_THINKING_TOKEN') {
+          // Optional: could stream thinking tokens on mobile
+          // Not critical for mobile UX
+        }
+        if (message.type === 'AI_SUGGESTIONS_READY') {
+          // All suggestions loaded - this happens after all parallel suggestions complete
+          // Mobile maintains the 5-second collapse as desktop
+        }
+        if (message.type === 'AI_ANALYSIS_FAILED') {
+          // Analysis failed - could show error state on mobile
+          // For now, just clear the collapse timer
+          if (collapseTimerRef.current) {
+            clearTimeout(collapseTimerRef.current)
+            collapseTimerRef.current = null
+          }
+        }
         if (message.type === 'FULL_RESET') {
           if (collapseTimerRef.current) { clearTimeout(collapseTimerRef.current); collapseTimerRef.current = null }
           setAlarms(message.data)

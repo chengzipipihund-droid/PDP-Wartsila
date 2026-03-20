@@ -17,13 +17,17 @@ function App() {
   const [selectedAlarms, setSelectedAlarms]     = useState(new Set())
   const [selectedAlarmId, setSelectedAlarmId]   = useState(null)
   const [isConnected, setIsConnected]           = useState(false)
+  const [sensorTemp, setSensorTemp]             = useState(null)
+  const [sensorConnected, setSensorConnected]   = useState(false)
+  const [sensorStatusMsg, setSensorStatusMsg]   = useState('')
   const [sessionLogs, setSessionLogs]           = useState({}) // keyed by alarmId
   const [voiceNotesByAlarm, setVoiceNotesByAlarm] = useState({}) // keyed by alarmId
   const [expandedGroups, setExpandedGroups]     = useState(new Set())
-  const [aiState, setAiState]                   = useState({ status: 'idle', alarms: [], groupResult: null, thinkingText: '', suggestingDone: 0, totalSuggestions: 0, currentSuggestionTitle: '' })
+  const [aiState, setAiState]                   = useState({ status: 'idle', alarms: [], groupResult: null, thinkingText: '', suggestingDone: 0, totalSuggestions: 0, currentSuggestionTitle: '', startTime: null, endTime: null, elapsedMs: 0 })
   // aiGroup drives visibility directly via React state (avoids module-mutation timing issues)
   const [aiGroup, setAiGroup]                   = useState(null) // { rootId, childIds } | null
   const collapseTimerRef = useRef(null)  // pending 5-s collapse setTimeout id
+  const aiTimerRef = useRef(null)  // timer interval for live elapsed time
 
   const toggleGroup = (rootId) => {
     setExpandedGroups(prev => {
@@ -75,11 +79,16 @@ function App() {
             _isAIAlarm     : true,   // flag so we can remove them on reset
           }
           setAlarms(prev => [normalized, ...prev.filter(x => x.id !== normalized.id)])
-          setAiState(prev => ({
-            ...prev,
-            status: 'firing',
-            alarms: [...prev.alarms.filter(x => x.id !== a.id), a],
-          }))
+          setAiState(prev => {
+            // Set start time on first alarm
+            const startTime = prev.startTime || Date.now()
+            return {
+              ...prev,
+              status: 'firing',
+              alarms: [...prev.alarms.filter(x => x.id !== a.id), a],
+              startTime,
+            }
+          })
           // After the last alarm lands, wait briefly so user sees (4/4), then switch to analysing
           if (message.index === message.total - 1) {
             setTimeout(() => setAiState(prev => ({ ...prev, status: 'analysing' })), 900)
@@ -152,18 +161,31 @@ function App() {
         case 'AI_THINKING_TOKEN':
           setAiState(prev => ({ ...prev, thinkingText: prev.thinkingText + message.token }))
           break
+        case 'SENSOR_READING':
+          // temp may be null when serial is disconnected
+          setSensorTemp(message.temp == null ? null : Number(message.temp))
+          break
+        case 'SENSOR_STATUS':
+          setSensorConnected(message.status?.connected === true)
+          setSensorStatusMsg(message.status?.message ?? '')
+          break
         case 'AI_SUGGESTIONS_READY':
-          setAiState(prev => ({ ...prev, status: 'ready', thinkingText: '', currentSuggestionTitle: '' }))
+          setAiState(prev => {
+            const endTime = Date.now()
+            const elapsedMs = prev.startTime ? endTime - prev.startTime : 0
+            return { ...prev, status: 'ready', thinkingText: '', currentSuggestionTitle: '', endTime, elapsedMs }
+          })
           break
         case 'AI_ANALYSIS_FAILED':
           setAiState(prev => ({ ...prev, status: 'failed' }))
           break
         case 'FULL_RESET':
           if (collapseTimerRef.current) { clearTimeout(collapseTimerRef.current); collapseTimerRef.current = null }
+          if (aiTimerRef.current) { clearInterval(aiTimerRef.current); aiTimerRef.current = null }
           unregisterAIGroup(registeredAIRootRef.current)
           registeredAIRootRef.current = null
           setAlarms(message.data)
-          setAiState({ status: 'idle', alarms: [], groupResult: null, thinkingText: '', suggestingDone: 0, totalSuggestions: 0, currentSuggestionTitle: '' })
+          setAiState({ status: 'idle', alarms: [], groupResult: null, thinkingText: '', suggestingDone: 0, totalSuggestions: 0, currentSuggestionTitle: '', startTime: null, endTime: null, elapsedMs: 0 })
           setAiGroup(null)
           setSelectedAlarmId(null)
           break
@@ -192,6 +214,40 @@ function App() {
       .then(entries => setSessionLogs(prev => ({ ...prev, [selectedAlarmId]: entries })))
       .catch(() => {})
   }, [selectedAlarmId])
+
+  // AI timer: update elapsed time every 100ms while processing
+  useEffect(() => {
+    if (aiState.status === 'idle' || aiState.status === 'ready' || aiState.status === 'failed') {
+      // Not in progress, stop timer
+      if (aiTimerRef.current) {
+        clearInterval(aiTimerRef.current)
+        aiTimerRef.current = null
+      }
+      return
+    }
+
+    // Start/continue timer
+    if (!aiTimerRef.current && aiState.startTime) {
+      aiTimerRef.current = setInterval(() => {
+        setAiState(prev => {
+          if (prev.status === 'idle' || prev.status === 'ready' || prev.status === 'failed' || !prev.startTime) {
+            return prev
+          }
+          const now = Date.now()
+          const elapsed = now - prev.startTime
+          return { ...prev, elapsedMs: elapsed }
+        })
+      }, 100)
+    }
+
+    return () => {
+      if (aiTimerRef.current) {
+        clearInterval(aiTimerRef.current)
+        aiTimerRef.current = null
+      }
+    }
+  }, [aiState.status, aiState.startTime])
+
   const filteredAlarms = (() => {
     const sorted = [...alarms].sort((a, b) => new Date(b.appearance) - new Date(a.appearance))
 
@@ -320,7 +376,16 @@ function App() {
       )}
       {page === 'list' && (
         <>
-          <Header stats={stats} activeSeverities={activeSeverities} activeResps={activeResps} onOpenDatabase={() => setPage('database')} onSimulateAnomaly={simulateAnomaly} onReset={handleReset} onClearAll={handleClearAll} />
+          <Header
+            stats={stats}
+            activeSeverities={activeSeverities}
+            activeResps={activeResps}
+            sensorTemp={sensorTemp}
+            onOpenDatabase={() => setPage('database')}
+            onSimulateAnomaly={simulateAnomaly}
+            onReset={handleReset}
+            onClearAll={handleClearAll}
+          />
           {/* pb-16 leaves space above the fixed bottom bar */}
           <div className="px-4 pt-1 pb-16">
         <AlarmList
@@ -364,6 +429,7 @@ function App() {
         suggestingDone={aiState.suggestingDone ?? 0}
         totalSuggestions={aiState.totalSuggestions ?? 0}
         currentSuggestionTitle={aiState.currentSuggestionTitle ?? ''}
+        elapsedMs={aiState.elapsedMs ?? 0}
       />
         </>
       )}

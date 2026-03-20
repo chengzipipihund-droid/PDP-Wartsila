@@ -32,7 +32,12 @@ export function buildGroupingPrompt (manualText, alarms) {
 
   const systemPrompt = `You are a marine engine maintenance assistant.
 Analyze alarms using ONLY the provided maintenance manual.
-You must return ONLY a single valid JSON object — no explanation, no markdown, no text outside JSON.`
+
+IMPORTANT: You MUST respond with ONLY valid JSON. 
+- Do NOT write any explanation, text, or markdown before the JSON
+- Do NOT write any text after the JSON
+- START your response with { and END with }
+- Return a single complete JSON object`
 
   const userPrompt = `MAINTENANCE MANUAL EXCERPT:
 ${manualText}
@@ -42,16 +47,11 @@ ${manualText}
 TRIGGERED ALARMS (in order of occurrence, 5 seconds apart):
 ${alarmList}
 
-Based solely on the manual above:
-1. Which alarm IDs belong to the same root cause group?
-2. Which alarm is the root cause? (The earliest alarm is a strong signal.)
-3. What are the recommended actions for the root cause alarm? (you determine the number of suggestions based on the manual content, no more than 3)
-4. What are the specific numbered steps for each action (you determine the number of suggestions based on the manual content, within 3 - 5 steps)?
-
-Return EXACTLY this JSON structure (no other text):
+Based solely on the manual above
+YOU MUST respond with ONLY the JSON below - no explanations, no text before or after:
 {
-  "group": ["id1", "id2", "id3", "id4"],
-  "rootCauseId": "id1",
+  "group": ["AI_A1", "AI_A2", "AI_A3", "AI_A4"],
+  "rootCauseId": "AI_A1",
   "suggestions": [
     {
       "id": "s1",
@@ -66,6 +66,8 @@ Return EXACTLY this JSON structure (no other text):
       "title": "<action title extracted from manual>",
       "steps": [
         { "order": 1, "text": "<step text extracted from manual>" }
+        { "order": 2, "text": "<step text extracted from manual>" }
+        { "order": 3, "text": "<step text extracted from manual>" }
       ]
     },
     {
@@ -73,6 +75,8 @@ Return EXACTLY this JSON structure (no other text):
       "title": "<action title extracted from manual>",
       "steps": [
         { "order": 1, "text": "<step text extracted from manual>" }
+        { "order": 2, "text": "<step text extracted from manual>" }
+        { "order": 3, "text": "<step text extracted from manual>" }
       ]
     }
   ]
@@ -103,7 +107,11 @@ export function buildReasoningPrompt (rootCause, suggestion, sensorListText) {
 
   const systemPrompt = `You are a marine engine diagnostic AI assistant.
 Generate a confidence score and engineering reasoning for a suggested repair action.
-Return ONLY valid JSON — no explanation, no markdown, no text outside JSON.`
+
+IMPORTANT: Respond with ONLY valid JSON.
+- Do NOT write explanations or text before/after JSON
+- START with { and END with }
+- Return only the JSON object`
 
   const userPrompt = `ROOT CAUSE ALARM: "${rootCause.description}"
   Anomaly reason: ${rootCause.anomalyReason}
@@ -117,15 +125,15 @@ SUGGESTED ACTION BEING EVALUATED:
 ${stepList}
 
 TASK:
-1. Rate confidence (0-100) that this action addresses the root cause.
+1. Rate confidence (70-99) that this action addresses the root cause.
 2. Write 2 sentences of engineering reasoning referencing the alarms and sensors, maximum 40 words.
 3. From the sensor list above, pick the 2 sensor IDs most relevant to THIS specific suggestion.
    Choose the sensors whose readings best justify or contextualise this action.
 
-Return EXACTLY this JSON (no other text):
+YOU MUST respond with ONLY this JSON - no explanations, no text before or after - START with { and END with }:
 {
-  "confidence": 91,
-  "reasoning": "2           sentences explaining why this action is the right response, referencing specific sensor values and the alarm sequence.",
+  "confidence": 70-99,
+  "reasoning": "2 sentences explaining why this action is the right response, referencing specific sensor values and the alarm sequence.",
   "relevantSensorIds": ["sensor_id_1", "sensor_id_2"]
 }
 

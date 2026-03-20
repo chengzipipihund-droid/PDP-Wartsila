@@ -113,24 +113,35 @@ export class AlarmSequencer {
 
       // ── Phase 2: confidence + reasoning per suggestion ────────────────────
       // Run after Phase 1 so the banner can show "ready" while Phase 2 loads
+      // Phase 2: Process all suggestions in PARALLEL
       const rootCauseAlarm = alarms.find(a => a.isRootCause) ?? alarms[0]
       const suggestions = result.suggestions ?? []
-      for (let i = 0; i < suggestions.length; i++) {
-        const suggestion = suggestions[i]
-        try {
-          // Signal to frontend which suggestion is now being analyzed
-          this._broadcast({
-            type            : 'AI_SUGGESTION_THINKING_START',
-            suggestionId    : suggestion.id,
-            suggestionTitle : suggestion.title,
-            index           : i,
-            total           : suggestions.length,
-            rootCauseId     : result.rootCauseId,
-          })
-          console.log('[AlarmSequencer] Generating reasoning for suggestion:', suggestion.id)
-          const reasoning = await generateReasoning(rootCauseAlarm, suggestion, (token) => {
-            this._broadcast({ type: 'AI_THINKING_TOKEN', token, phase: 2 })
-          })
+      
+      // Broadcast the start of parallel processing for all suggestions
+      suggestions.forEach((suggestion, i) => {
+        this._broadcast({
+          type            : 'AI_SUGGESTION_THINKING_START',
+          suggestionId    : suggestion.id,
+          suggestionTitle : suggestion.title,
+          index           : i,
+          total           : suggestions.length,
+          rootCauseId     : result.rootCauseId,
+        })
+      })
+      
+      console.log('[AlarmSequencer] Generating reasoning for all', suggestions.length, 'suggestions (parallel)')
+      
+      // Run all suggestions in parallel using Promise.all()
+      const reasoningPromises = suggestions.map((suggestion, i) => {
+        const startTime = Date.now()
+        console.log(`[AlarmSequencer] START reasoning #${i + 1} (${suggestion.id})`)
+        
+        return generateReasoning(rootCauseAlarm, suggestion, (token) => {
+          this._broadcast({ type: 'AI_THINKING_TOKEN', token, phase: 2, suggestionId: suggestion.id })
+        })
+        .then(reasoning => {
+          const elapsed = Date.now() - startTime
+          console.log(`[AlarmSequencer] FINISH reasoning #${i + 1} (${suggestion.id}) after ${elapsed}ms`)
           this._broadcast({
             type        : 'AI_REASONING_READY',
             suggestionId: suggestion.id,
@@ -147,9 +158,10 @@ export class AlarmSequencer {
             sensorData : reasoning.sensorData,
           }
           console.log('[AlarmSequencer] Reasoning ready for', suggestion.id, '| confidence:', reasoning.confidence)
-        } catch (err) {
+        })
+        .catch(err => {
           console.error('[AlarmSequencer] generateReasoning failed for', suggestion.id, ':', err.message)
-          // Still increment so the counter doesn't stall
+          // Still broadcast so the counter doesn't stall
           this._broadcast({
             type        : 'AI_REASONING_READY',
             suggestionId: suggestion.id,
@@ -158,8 +170,11 @@ export class AlarmSequencer {
             reasoning   : null,
             sensorData  : [],
           })
-        }
-      }
+        })
+      })
+      
+      // Wait for all to complete
+      await Promise.all(reasoningPromises)
       // All suggestions done → banner can show "ready"
       this._broadcast({ type: 'AI_SUGGESTIONS_READY' })
       console.log('[AlarmSequencer] All suggestions ready')

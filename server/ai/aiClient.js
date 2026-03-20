@@ -56,6 +56,7 @@ const PROVIDER = (process.env.AI_PROVIDER || 'ollama').toLowerCase()
 let _client = null
 
 function getClient () {
+  
   if (_client) return _client
 
   if (PROVIDER === 'openai') {
@@ -185,8 +186,8 @@ async function _callAI (systemPrompt, userPrompt, onThinkingToken) {
       { role: 'system', content: systemPrompt },
       { role: 'user',   content: userPrompt   },
     ],
-    temperature : 0.3,
-    max_tokens  : 2000,
+    temperature : 0.1,    // Very low temperature to enforce strict JSON output
+    max_tokens  : 1200,   // Allow enough for structured JSON
     stream      : true,   // always stream so we can capture thinking tokens
   }
 
@@ -255,8 +256,11 @@ function _parseJSON (raw, caller) {
   const braceEnd   = raw.lastIndexOf('}')
   if (braceStart !== -1 && braceEnd > braceStart) {
     try {
+      console.log(`[aiClient] Extracted JSON from position ${braceStart} to ${braceEnd}`)
       return JSON.parse(raw.slice(braceStart, braceEnd + 1))
-    } catch (_) {}
+    } catch (err) {
+      console.log(`[aiClient] Failed to parse extracted JSON: ${err.message}`)
+    }
   }
 
   console.error(`[aiClient] ${caller}: failed to parse JSON. Raw response (first 300 chars):`)

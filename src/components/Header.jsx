@@ -44,7 +44,7 @@ function SeverityCount({ icon, count }) {
   )
 }
 
-export default function Header({ stats, activeSeverities = new Set(), activeResps = new Set(), onOpenDatabase, onSimulateAnomaly, onReset, onClearAll }) {
+export default function Header({ stats, activeSeverities = new Set(), activeResps = new Set(), sensorTemp = null, onOpenDatabase, onSimulateAnomaly, onReset, onClearAll }) {
   const {
     total = 0,
     active = 0,
@@ -155,6 +155,12 @@ export default function Header({ stats, activeSeverities = new Set(), activeResp
         )}
 
         <span className="flex-1" />
+
+        {/* Live temperature (from Arduino/DS18B20) */}
+        <span className="text-white text-sm font-medium whitespace-nowrap mr-4">
+          Temp:&nbsp;<span className="font-bold">{sensorTemp != null ? `${sensorTemp.toFixed(2)}°C` : '--'}</span>
+        </span>
+
         <button
           onClick={onSimulateAnomaly}
           className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
