@@ -1,0 +1,13 @@
+{
+  "name": "smartnav-controller",
+  "version": "1.0.0",
+  "description": "IR lever → WebSocket bridge",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test-file": "cat ../test-data/Dataset.txt | python3 ir_reader.py --stdin --rate 0.08 | node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

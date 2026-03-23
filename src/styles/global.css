@@ -1,0 +1,37 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0f1a;
+  --pnl: rgba(12, 20, 38, 0.94);
+  --crd: rgba(18, 28, 50, 0.88);
+  --tx: #c8d8ef;
+  --tx2: #6a84a8;
+  --tx3: #3a5275;
+  --grn: #22d68a;
+  --gd: rgba(34, 214, 138, 0.15);
+  --blu: #3b8bff;
+  --amb: #f0a030;
+  --red: #ef4444;
+  --cyn: #22d3ee;
+  --pur: #a78bfa;
+  --brd: rgba(60, 90, 140, 0.25);
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--tx);
+  font-family: var(--sans);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: var(--brd); border-radius: 2px; }
+
+/* Animations */
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
