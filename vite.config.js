@@ -10,8 +10,8 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@imgs':    path.resolve(__dirname, 'imgs'),
-      '@filters': path.resolve(__dirname, 'imgs/filters'),
+      '@imgs':    path.resolve(__dirname, 'src/pages/alarm/assets'),
+      '@filters': path.resolve(__dirname, 'src/pages/alarm/assets/filters'),
     },
   },
   server: {

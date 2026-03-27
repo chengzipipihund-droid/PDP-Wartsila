@@ -1,6 +1,6 @@
 // ── WebSocket handler + broadcast ───────────────────────────────────────────
 import { WebSocket } from 'ws'
-import { state, withSuggestions } from './state.js'
+import { state, withSuggestions } from './alarm/state.js'
 
 const clients = new Set()
 

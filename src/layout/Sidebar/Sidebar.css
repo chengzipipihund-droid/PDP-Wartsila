@@ -1,0 +1,40 @@
+.sidebar {
+  position: relative;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px;
+  gap: 4px;
+  background: #3B3D3F;
+}
+
+.sidebar-btn {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sidebar-btn--active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.sidebar-icon {
+  width: 52px;
+  height: 52px;
+  display: block;
+  transition: opacity 0.15s;
+}
+
+.sidebar-btn:hover .sidebar-icon {
+  opacity: 0.75;
+}

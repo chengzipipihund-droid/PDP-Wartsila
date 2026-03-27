@@ -28,3 +28,10 @@ Thumbs.db
 
 # Temp
 /tmp/
+
+# Claude Code local config
+.claude/
+
+# Python cache
+__pycache__/
+*.pyc
