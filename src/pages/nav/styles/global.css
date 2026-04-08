@@ -1,20 +1,20 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg: #0a0f1a;
-  --pnl: rgba(12, 20, 38, 0.94);
-  --crd: rgba(18, 28, 50, 0.88);
-  --tx: #c8d8ef;
-  --tx2: #6a84a8;
-  --tx3: #3a5275;
-  --grn: #22d68a;
-  --gd: rgba(34, 214, 138, 0.15);
-  --blu: #3b8bff;
-  --amb: #f0a030;
+  --bg: #F4F6F8;
+  --pnl: rgba(255, 255, 255, 0.94);
+  --crd: rgba(255, 255, 255, 0.88);
+  --tx: #222222;
+  --tx2: #555555;
+  --tx3: #888888;
+  --grn: #4FBF65;
+  --gd: rgba(79, 191, 101, 0.15);
+  --blu: #2A81E4;
+  --amb: #D99B08;
   --red: #ef4444;
-  --cyn: #22d3ee;
+  --cyn: #3bc6eb;
   --pur: #a78bfa;
-  --brd: rgba(60, 90, 140, 0.25);
+  --brd: rgba(0, 0, 0, 0.1);
   --mono: 'JetBrains Mono', monospace;
   --sans: 'DM Sans', sans-serif;
 }
@@ -35,3 +35,4 @@ body {
 /* Animations */
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes aiPopupFade { 0% { opacity: 0; transform: translateX(-50%) translateY(-4px); } 8% { opacity: 1; transform: translateX(-50%) translateY(0); } 70% { opacity: 1; } 100% { opacity: 0; } }

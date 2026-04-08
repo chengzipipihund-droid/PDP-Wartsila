@@ -5,7 +5,7 @@
   position: relative;
   height: 100%;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
   background: #F7F7F7;
 }
 
@@ -24,10 +24,17 @@
   position: absolute;
   top: 0;
   left: -4px;                          /* escape body padding-left */
-  width: 1180px;                       /* = 1280px total - 100px sidebar */
-  height: 38px;                /* matches Mode3.svg energy index heading = 38px */
-  object-fit: fill;
-  display: block;
+  width: calc(100% + 8px);             /* extend to touch both left and right edges / sidebar */
+  height: 32px;                        /* matches other panels */
+  background: #D3D3D3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #999;
+  white-space: nowrap;
   z-index: 2;
 }
 
@@ -158,3 +165,19 @@
 
 .ei-modal-head button:hover { background: rgba(255, 255, 255, 0.1); }
 .ei-modal-content { padding: 16px; }
+
+/* ── Percentage Label on Lines ── */
+.ei-line-label {
+  fill: #2e7d32; /* matching green of flow-dot */
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+  filter: drop-shadow(0 0 2px white); /* makes it pop on any background */
+  font-family: inherit;
+  z-index: 5;
+}
+
+.ei-flow-dot {
+  fill: #4CAF50;
+  filter: drop-shadow(0 0 3px #4CAF50);
+}

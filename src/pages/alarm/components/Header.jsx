@@ -1,4 +1,5 @@
 import WartsilaLogo from '@imgs/wartsila_logo.svg'
+import { resetAll } from '../../energy/stores/energyStore'
 import BridgeIcon   from '@imgs/Bridge.svg'
 import ECRIcon      from '@imgs/ECR.svg'
 
@@ -168,6 +169,13 @@ export default function Header({ stats, activeSeverities = new Set(), activeResp
           Temp:&nbsp;<span className="font-bold">{sensorTemp != null ? `${sensorTemp.toFixed(2)}°C` : '--'}</span>
         </span>
 
+        <button
+          onClick={resetAll}
+          className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
+          style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)' }}
+        >
+          Reset All
+        </button>
         <button
           onClick={onSimulateAnomaly}
           className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"

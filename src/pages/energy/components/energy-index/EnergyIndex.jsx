@@ -7,8 +7,9 @@
    ─ EnergyFlow 开关控制粒子动画开/关
    ═══════════════════════════════════════════════════════════ */
 import { useState, useRef, useLayoutEffect, useCallback } from 'react';
+import { useEnergyStore } from '../../stores/energyStore';
 import Background from './elements/Background.svg';
-import Heading    from './elements/Heading.svg';
+
 import Solar      from './elements/solar.svg';
 import Hydrogen   from './elements/Hydrogen.svg';
 import Engine     from './elements/engine.svg';
@@ -39,12 +40,11 @@ const ELEMENTS = [
  * Positions are calculated at runtime via DOM measurement (useLayoutEffect).
  */
 const CONNECTIONS = [
-  { id: 'h2-ess',    from: 'h2',     fromSide: 'right',  to: 'ess',    toSide: 'top',                        dur: '2.6s' },
-  { id: 'br-ess',    from: 'bridge', fromSide: 'bottom', to: 'ess',    toSide: 'top',                        dur: '2.5s' },
-  { id: 'eng-ess',   from: 'engine', fromSide: 'right',  to: 'ess',    toSide: 'left',  toOffset: -0.25,     dur: '2.0s' },
-  { id: 'cpp-ess',   from: 'cpp',    fromSide: 'right',  to: 'ess',    toSide: 'left',  toOffset:  0.25,     dur: '3.0s' },
-  { id: 'ess-hotel', from: 'ess',    fromSide: 'right',  to: 'hotel',  toSide: 'left',                       dur: '1.8s' },
-  { id: 'ess-bow',   from: 'ess',    fromSide: 'right',  to: 'bow',    toSide: 'left',                       dur: '2.3s' },
+  { id: 'h2-ess',    from: 'h2',     fromSide: 'right',  to: 'ess',    toSide: 'top',    dur: '2.6s', label: '15%' },
+  { id: 'eng-ess',   from: 'engine', fromSide: 'right',  to: 'ess',    toSide: 'left',   dur: '2.0s', label: '45%', reverseWhen: 'DISCHARGING' },
+  { id: 'cpp-ess',   from: 'cpp',    fromSide: 'right',  to: 'ess',    toSide: 'left',   dur: '3.0s', label: '30%', toOffset: 0.25, reverseWhen: 'CHARGING' },
+  { id: 'ess-hotel', from: 'ess',    fromSide: 'right',  to: 'hotel',  toSide: 'left',   dur: '1.8s', label: '10%' },
+  { id: 'ess-bow',   from: 'ess',    fromSide: 'right',  to: 'bow',    toSide: 'left',   dur: '2.3s', label: '5%' },
 ];
 
 const GAP = 10;       // px gap between icon edge and line endpoint
@@ -75,8 +75,10 @@ function buildPath(s, e) {
   return `M ${px(s.x)},${px(s.y)} H ${px(h)} Q ${px(e.x)},${px(s.y)} ${px(e.x)},${px(v)} V ${px(e.y)}`;
 }
 
-function EnergyIndex({ showEnergyFlow, onBridgeClick, optimizationMarkers }) {
+function EnergyIndex({ showEnergyFlow, onBridgeClick, onEssClick }) {
   const [activePopup, setActivePopup] = useState(null);
+
+  const { engineKw, propulsionKw, batteryKw, totalDemandKw } = useEnergyStore();
 
   // ── Runtime line measurement ──────────────────────────
   const containerRef = useRef(null);
@@ -96,14 +98,21 @@ function EnergyIndex({ showEnergyFlow, onBridgeClick, optimizationMarkers }) {
       width: r.width, height: r.height,
     });
 
-    const lines = CONNECTIONS.map(({ id, from, fromSide, to, toSide, dur, fromOffset = 0, toOffset = 0 }) => {
+    const lines = CONNECTIONS.map(({ id, from, fromSide, to, toSide, dur, fromOffset = 0, toOffset = 0, reverseWhen, label }) => {
       const fEl = iconRefs.current[from];
       const tEl = iconRefs.current[to];
       if (!fEl || !tEl) return null;
-      const sp = sidePoint(toLocal(fEl.getBoundingClientRect()), fromSide, fromOffset);
-      const ep = sidePoint(toLocal(tEl.getBoundingClientRect()), toSide,   toOffset);
+      let sp = sidePoint(toLocal(fEl.getBoundingClientRect()), fromSide, fromOffset);
+      let ep = sidePoint(toLocal(tEl.getBoundingClientRect()), toSide,   toOffset);
+      
       const midpoint = { x: (sp.x + ep.x) / 2, y: (sp.y + ep.y) / 2 };
-      return { id, path: buildPath(sp, ep), sp, ep, dur, midpoint };
+      
+      // Determine flow direction based on batteryMode
+      const currentMode = useEnergyStore.getState().batteryMode;
+      const isReversed = reverseWhen && currentMode === reverseWhen;
+      const actualPath = isReversed ? buildPath(ep, sp) : buildPath(sp, ep);
+
+      return { id, path: actualPath, sp, ep, dur, midpoint, label };
     }).filter(Boolean);
 
     setLineData({ viewBox: `0 0 ${Math.round(W)} ${Math.round(H)}`, lines });
@@ -123,7 +132,7 @@ function EnergyIndex({ showEnergyFlow, onBridgeClick, optimizationMarkers }) {
       <img src={Background} className="ei-bg" alt="" />
 
       {/* ── Layer 1: heading bar ── */}
-      <img src={Heading} className="ei-heading" alt="Energy Index" />
+      <div className="ei-heading">ENERGY INDEX</div>
 
       {/* ── Layer 2: connection lines + flow animation ── */}
       <svg className="ei-lines" viewBox={lineData.viewBox} preserveAspectRatio="none">
@@ -135,10 +144,21 @@ function EnergyIndex({ showEnergyFlow, onBridgeClick, optimizationMarkers }) {
           </g>
         ))}
 
-        {showEnergyFlow && lineData.lines.map(({ id, path, dur }) => (
-          <circle key={`flow-${id}`} r="5" className="ei-flow-dot">
-            <animateMotion dur={dur} repeatCount="indefinite" path={path} />
-          </circle>
+        {showEnergyFlow && lineData.lines.map(({ id, path, dur, label, midpoint }) => (
+          <g key={`flow-group-${id}`}>
+            <circle r="5" className="ei-flow-dot">
+              <animateMotion dur={dur} repeatCount="indefinite" path={path} />
+            </circle>
+            {/* Percentage Label Overlay */}
+            <text 
+              x={midpoint.x} 
+              y={midpoint.y - 12} 
+              className="ei-line-label"
+              textAnchor="middle"
+            >
+              {label}
+            </text>
+          </g>
         ))}
       </svg>
 
@@ -154,6 +174,8 @@ function EnergyIndex({ showEnergyFlow, onBridgeClick, optimizationMarkers }) {
           onClick={() => {
             if (id === 'bridge' && onBridgeClick) {
               onBridgeClick();
+            } else if (id === 'ess' && onEssClick) {
+              onEssClick();
             } else {
               setActivePopup(id);
             }
@@ -172,64 +194,6 @@ function EnergyIndex({ showEnergyFlow, onBridgeClick, optimizationMarkers }) {
         RENEWABLE ENERGY
       </span>
 
-      {/* ── Layer 4: AI optimization badges on connection lines ── */}
-      {optimizationMarkers && optimizationMarkers.map(marker => {
-        const line = lineData.lines.find(l => l.id === marker.connectionId);
-        if (!line) return null;
-        const { x, y } = line.midpoint;
-        const isPositive = marker.saving.startsWith('+');
-        return (
-          <div
-            key={marker.connectionId}
-            style={{
-              position: 'absolute',
-              left: x,
-              top: y,
-              transform: 'translate(-50%, -50%)',
-              zIndex: 10,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 2,
-              animation: 'eo-badge-in 0.35s cubic-bezier(0.22,1,0.36,1) both, eo-badge-glow 2.2s ease-in-out 0.4s infinite',
-              pointerEvents: 'none',
-            }}
-          >
-            <div style={{
-              background: isPositive ? '#1C3A1C' : '#2A2010',
-              border: `1.5px solid ${isPositive ? '#4FBF65' : '#FFB347'}`,
-              borderRadius: 8,
-              padding: '3px 8px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              boxShadow: isPositive
-                ? '0 0 10px rgba(79,191,101,0.45)'
-                : '0 0 10px rgba(255,179,71,0.45)',
-            }}>
-              <span style={{
-                color: isPositive ? '#4FBF65' : '#FFB347',
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: 0.3,
-                lineHeight: 1.2,
-              }}>
-                {marker.saving}
-              </span>
-              <span style={{
-                color: isPositive ? '#7AC87A' : '#C8965A',
-                fontSize: 8,
-                fontWeight: 600,
-                letterSpacing: 0.5,
-                lineHeight: 1.2,
-              }}>
-                {marker.label}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-
       {/* ── Popup modal ── */}
       {activePopup && (
         <div className="ei-overlay" onClick={() => setActivePopup(null)}>
@@ -239,7 +203,11 @@ function EnergyIndex({ showEnergyFlow, onBridgeClick, optimizationMarkers }) {
               <button onClick={() => setActivePopup(null)}>✕</button>
             </div>
             <div className="ei-modal-content">
-              <p>这里放 {activePopup} 的详细内容</p>
+              {activePopup === 'engine' && <p>Total Running Power: {engineKw.toLocaleString()} kW</p>}
+              {activePopup === 'ess' && <p>Battery Power Output: {batteryKw.toLocaleString()} kW</p>}
+              {activePopup === 'cpp' && <p>Propulsion Demand: {propulsionKw.toLocaleString()} kW</p>}
+              {activePopup === 'hotel' && <p>Hotel Load: {(totalDemandKw - propulsionKw).toLocaleString()} kW</p>}
+              {(!['engine','ess','cpp','hotel'].includes(activePopup)) && <p>System Nominal. Power Flow OK.</p>}
             </div>
           </div>
         </div>
