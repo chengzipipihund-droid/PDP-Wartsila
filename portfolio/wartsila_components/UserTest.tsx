@@ -159,19 +159,19 @@ export default function UserTest({ activeScope, setActiveScope }: UserTestProps)
           <div className="mt-14 w-full">
             {/* General Positive Feedback */}
             <div className="mb-10">
-              <h3 className="flex items-center gap-3 text-lg sm:text-xl font-bold text-[#1561AB] mb-4">
+              <h3 className="flex items-center gap-3 text-lg sm:text-xl font-bold text-[#1561AB]">
                 <img src={goodLogo} className="w-6 h-6 object-contain" alt="Thumbs Up" /> 
                 General Positive Feedback
               </h3>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-                <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="flex flex-col gap-2 border border-[#DBE7F3] rounded-lg px-4 py-2 w-fit mt-4">
                   <h4 className="text-[#1f1f1f] font-bold text-[14px] sm:text-[15px]">Good Function</h4>
                   <p className="text-gray-500 italic text-[13px] text-justify leading-tight">
                     "I would call this a great engine diagnostics tool, like a car diagnostic tool, but very intelligent. With this, we could save a lot of working hours, overtime, and even unnecessary spare parts."
                   </p>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 border border-[#DBE7F3] rounded-lg px-4 py-2 w-fit sm:mt-4">
                   <h4 className="text-[#1f1f1f] font-bold text-[14px] sm:text-[15px]">AI Trust & Potential</h4>
                   <p className="text-gray-500 italic text-[13px] text-justify leading-tight">
                     "Over time, AI will become smarter, that's very good for decisions. Generally, I think AI is good and helpful. If it's connected to the internet — no, so it's better to keep it local."
@@ -187,7 +187,7 @@ export default function UserTest({ activeScope, setActiveScope }: UserTestProps)
                 Confirmed by Users
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="flex flex-col gap-3">
                   <h4 className="text-[#1f1f1f] font-bold text-[14px] sm:text-[15px]">Root Cause Identification</h4>
                   <p className="text-gray-500 italic text-[13px] text-justify leading-tight">
@@ -221,8 +221,8 @@ export default function UserTest({ activeScope, setActiveScope }: UserTestProps)
                 Needs to improve
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-                <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 ">
+                <div className="flex flex-col gap-2  border border-[#DBE7F3] rounded-lg px-4 py-2 w-fit">
                   <h4 className="text-[#1f1f1f] font-bold text-[14px] sm:text-[15px] flex items-center gap-2">
                     <span className="flex items-center justify-center bg-[#E5F0FA] text-[#1561AB] text-[11px] font-bold w-[18px] h-[18px] rounded-sm">1</span>
                     Text-heavy
@@ -231,7 +231,7 @@ export default function UserTest({ activeScope, setActiveScope }: UserTestProps)
                     "We don't have time to read — it should be something visual rather than text. When we forget something, we refer to drawings."
                   </p>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2  border border-[#DBE7F3] rounded-lg px-4 py-2 w-fit">
                   <h4 className="text-[#1f1f1f] font-bold text-[14px] sm:text-[15px] flex items-center gap-2">
                     <span className="flex items-center justify-center bg-[#E5F0FA] text-[#1561AB] text-[11px] font-bold w-[18px] h-[18px] rounded-sm">2</span>
                     Information Overload
@@ -318,9 +318,9 @@ export default function UserTest({ activeScope, setActiveScope }: UserTestProps)
                         Navigation officers can access all alarms and real-time logs, which they find useful, but their primary focus is safe navigation rather than system monitoring; however, current severity-based alarm categorization does not always reflect what is most relevant in their context, as urgency differs by role.
                         </p>
 
-                        <div className="flex flex-col gap-2 text-[13px] w-full md:w-1/2">
+                        <div className="flex flex-col gap-2 text-[13px] w-full md:w-1/2 border border-[#DBE7F3] rounded-lg px-3 py-2 w-fit">
                         <span className="font-bold text-[#1f1f1f]">Possible Future Direction</span>
-                        <ul className="text-[#1f1f1f] space-y-1.5 pl-[14px] list-disc marker:text-gray-800 marker:text-[10px] leading-snug">
+                        <ul className="text-[#1f1f1f] space-y-1.5 pl-[14px] list-disc marker:text-gray-800 marker:text-[10px] leading-snug ">
                             <li>AI highlights "focus now" actions instead of full alarm lists</li>
                             <li>Re-rank alarms based on different contexts (e.g. harbour vs. open sea)</li>
                         </ul>
