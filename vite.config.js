@@ -20,20 +20,26 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3001',
         changeOrigin: true,
         agent: noKeepaliveAgent,
         configure: (proxy) => {
           proxy.on('error', (err, _req, res) => {
-            res.writeHead(502, { 'Content-Type': 'application/json' })
+            if (!res || res.writableEnded) return
+            if (!res.headersSent) {
+              res.writeHead(502, { 'Content-Type': 'application/json' })
+            }
             res.end(JSON.stringify({ error: 'Server unreachable' }))
           })
         },
       },
       '/ws': {
-        target: 'ws://localhost:3000',
+        target: 'ws://localhost:3001',
         ws: true,
         changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('error', () => {})
+        },
       },
     },
   },

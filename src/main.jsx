@@ -5,6 +5,7 @@ import App from './pages/energy/App.jsx'
 import AlarmApp from './pages/alarm/AlarmApp.jsx'
 import MobileApp from './pages/alarm/MobileApp.jsx'
 import NavPage from './pages/nav/NavPage.jsx'
+import PortfolioPage from './Pages/portfolio/PortfolioPage.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/alarm"  element={<AlarmApp />} />
         <Route path="/nav"    element={<NavPage />} />
         <Route path="/mobile" element={<MobileApp />} />
+        <Route path="/portfolio" element={<PortfolioPage />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,
