@@ -13,24 +13,24 @@ import { SerialPort } from 'serialport'
 import { ReadlineParser } from '@serialport/parser-readline'
 
 // ─── Config ────────────────────────────────────────────────────────────────
-const POLL_INTERVAL_MS   = 1000   // read sensor every 1 second (fallback)
-const ANOMALY_THRESHOLD  = 26     // °C, above this → anomaly
-const ANOMALY_DURATION   = 3      // must exceed threshold for N consecutive reads to confirm
-const SERIAL_PORT        = process.env.SENSOR_SERIAL_PORT || 'COM3'
-const SERIAL_BAUDRATE    = Number(process.env.SENSOR_BAUDRATE) || 9600
+const POLL_INTERVAL_MS = 1000   // read sensor every 1 second (fallback)
+const ANOMALY_THRESHOLD = 30     // °C, above this → anomaly
+const ANOMALY_DURATION = 3      // must exceed threshold for N consecutive reads to confirm
+const SERIAL_PORT = process.env.SENSOR_SERIAL_PORT || 'COM3'
+const SERIAL_BAUDRATE = Number(process.env.SENSOR_BAUDRATE) || 9600
 // ────────────────────────────────────────────────────────────────────────────
 
 class SensorSimulator extends EventEmitter {
-  constructor () {
+  constructor() {
     super()
-    this.running         = false
-    this.intervalId      = null
+    this.running = false
+    this.intervalId = null
     this.consecutiveHigh = 0       // count of consecutive reads above threshold
-    this.anomalyFired    = false   // prevent duplicate anomaly events per episode
-    this.currentTemp     = null    // null means 'no sensor available yet'
-    this.lastTempAt      = null    // timestamp of last real reading
-    this.serialReady     = false
-    this._serialRetryId  = null
+    this.anomalyFired = false   // prevent duplicate anomaly events per episode
+    this.currentTemp = null    // null means 'no sensor available yet'
+    this.lastTempAt = null    // timestamp of last real reading
+    this.serialReady = false
+    this._serialRetryId = null
   }
 
   /**
@@ -40,7 +40,7 @@ class SensorSimulator extends EventEmitter {
    *   'anomaly'  { temp, timestamp, reason } — when anomaly confirmed
    *   'normal'   { temp, timestamp }         — when temp returns to normal
    */
-  start () {
+  start() {
     if (this.running) return
     this.running = true
     console.log('[SensorSimulator] Started polling every', POLL_INTERVAL_MS, 'ms')
@@ -54,12 +54,15 @@ class SensorSimulator extends EventEmitter {
 
     this.intervalId = setInterval(() => {
       const reading = this._readSensor()
+      if (reading.temp === null) {
+        console.log(`[SensorSimulator] No reading from ${SERIAL_PORT}`)
+      }
       this.emit('reading', reading)
       this._evaluate(reading)
     }, POLL_INTERVAL_MS)
   }
 
-  stop () {
+  stop() {
     if (!this.running) return
     clearInterval(this.intervalId)
     this.running = false
@@ -84,7 +87,7 @@ class SensorSimulator extends EventEmitter {
    * NOTE: deliberately does NOT update currentTemp/lastTempAt so the
    * injected value is never shown in the temperature display.
    */
-  injectAnomaly (temp = 97) {
+  injectAnomaly(temp = 97) {
     console.log('[SensorSimulator] Manual anomaly injected, temp =', temp)
     // Only trigger anomaly evaluation — don't update sensor display state
     const reading = { temp, timestamp: new Date().toISOString() }
@@ -94,20 +97,20 @@ class SensorSimulator extends EventEmitter {
   /**
    * Update the current temperature from the serial port, then emit the usual events.
    */
-  _setTemp (temp) {
+  _setTemp(temp) {
     this.currentTemp = temp
-    this.lastTempAt  = Date.now()
+    this.lastTempAt = Date.now()
     const reading = { temp, timestamp: new Date().toISOString() }
     this.emit('reading', reading)
     this._evaluate(reading, true /* force */)
   }
 
   /** Reset so a new anomaly episode can be triggered */
-  reset () {
+  reset() {
     this.consecutiveHigh = 0
-    this.anomalyFired    = false
-    this.currentTemp     = null
-    this.lastTempAt      = null   // clear staleness so next _readSensor returns null, not a fake value
+    this.anomalyFired = false
+    this.currentTemp = null
+    this.lastTempAt = null   // clear staleness so next _readSensor returns null, not a fake value
     console.log('[SensorSimulator] Reset — ready for next episode')
   }
 
@@ -116,7 +119,7 @@ class SensorSimulator extends EventEmitter {
   /**
    * Attempt to open the serial port and wire up the DS18B20 output.
    */
-  _initSerial () {
+  _initSerial() {
     if (this.serialReady) return
 
     try {
@@ -127,7 +130,7 @@ class SensorSimulator extends EventEmitter {
         lock: false,              // allow opening even if another process has the port open
       })
 
-      const parser = this.serialPort.pipe(new ReadlineParser({ delimiter: '\r\n' }))
+      const parser = this.serialPort.pipe(new ReadlineParser({ delimiter: '\n' }))
 
       parser.on('data', line => {
         const trimmed = line.trim()
@@ -166,7 +169,7 @@ class SensorSimulator extends EventEmitter {
     }
   }
 
-  _scheduleSerialRetry () {
+  _scheduleSerialRetry() {
     if (this._serialRetryId) return
     this._serialRetryId = setTimeout(() => {
       this._serialRetryId = null
@@ -180,14 +183,14 @@ class SensorSimulator extends EventEmitter {
    * In production: replace with real hardware read.
    * Here we just return the current simulated temperature.
    */
-  _readSensor () {
+  _readSensor() {
     // Return null if no real reading has arrived in the last 5 seconds
     // (covers Arduino unplug, serial loss, UDP timeout, etc.)
     const stale = !this.lastTempAt || (Date.now() - this.lastTempAt) > 5000
     return { temp: stale ? null : this.currentTemp, timestamp: new Date().toISOString() }
   }
 
-  _evaluate ({ temp, timestamp }, force = false) {
+  _evaluate({ temp, timestamp }, force = false) {
     if (temp > ANOMALY_THRESHOLD) {
       this.consecutiveHigh++
 
@@ -201,7 +204,7 @@ class SensorSimulator extends EventEmitter {
       // Temperature returned to normal
       if (this.anomalyFired) {
         this.emit('normal', { temp, timestamp })
-        this.anomalyFired    = false
+        this.anomalyFired = false
         this.consecutiveHigh = 0
         console.log('[SensorSimulator] Temperature returned to normal')
       } else {
