@@ -1,0 +1,240 @@
+/* ── LeverSimPopup ────────────────────────────────────────────────────────────
+   Floating 4-lever simulation widget.
+   Dark panel, consistent with LeverPopup (panelBg #3B3E3F).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.lsim-popup {
+  display: flex;
+  flex-direction: column;
+  width: 248px;
+  background: #3B3E3F;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Header ── */
+.lsim-header {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.lsim-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lsim-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.lsim-close {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 12px;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+}
+
+.lsim-status-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.lsim-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.lsim-dot.active  { background: #4FBF65; box-shadow: 0 0 4px #4FBF65; }
+.lsim-dot.inactive { background: #888; }
+.lsim-dot.api-ok  { background: #4FBF65; }
+.lsim-dot.api-err { background: #FF6B6B; }
+
+.lsim-status-text {
+  font-size: 8px;
+  color: #aaa;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* ── Mode selector ── */
+.lsim-modes {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px 0;
+}
+
+.lsim-mode-btn {
+  flex: 1;
+  padding: 4px 0;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: #53575A;
+  color: #ccc;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.lsim-mode-btn.selected {
+  background: #4FBF65;
+  color: #1a2e1e;
+  border-color: #4FBF65;
+}
+
+.lsim-mode-label {
+  text-align: center;
+  font-size: 8px;
+  color: #888;
+  padding: 3px 0 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── 4 vertical levers ── */
+.lsim-levers {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 12px 6px;
+  gap: 4px;
+}
+
+.vsld-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.vsld-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: #bbb;
+  letter-spacing: 0.5px;
+}
+
+.vsld-track {
+  position: relative;
+  width: 18px;
+  cursor: ns-resize;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+  touch-action: none;
+}
+
+.vsld-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, #4FBF65, #7FD98F);
+  border-radius: 0 0 3px 3px;
+  transition: height 0.05s linear;
+}
+
+.vsld-thumb {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  width: 22px;
+  height: 10px;
+  background: linear-gradient(180deg, #ddd, #999);
+  border: 1px solid #666;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  z-index: 2;
+}
+
+.vsld-tick {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+  transform: translateY(-50%);
+}
+
+.vsld-value {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4FBF65;
+}
+
+/* ── Live stats ── */
+.lsim-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  padding: 6px 12px 8px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+.lsim-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.lsim-stat-label {
+  font-size: 7px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.lsim-stat-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: #E6E9EC;
+}
+
+.lsim-stat-val.batt-charging    { color: #4FBF65; }
+.lsim-stat-val.batt-discharging { color: #EAB71D; }
+.lsim-stat-val.batt-idle        { color: #E6E9EC; }
+
+/* ── Activate toggle ── */
+.lsim-activate-btn {
+  margin: 0 12px 12px;
+  padding: 7px 0;
+  border-radius: 5px;
+  border: none;
+  background: #53575A;
+  color: #E6E9EC;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s;
+}
+
+.lsim-activate-btn.active {
+  background: rgba(231, 31, 25, 0.55);
+  color: #fff;
+}
+
+.lsim-activate-btn:hover {
+  filter: brightness(1.15);
+}

@@ -1,0 +1,590 @@
+/* ═══════════════════════════════════════════════════════════
+   BatteryPopup.css — Side panel layout
+   从右侧 slide-in，参照 Pop-up.svg 设计
+   ═══════════════════════════════════════════════════════════ */
+
+.battery-popup-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #3B3E3F;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  color: #FFFFFF;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   顶部黑色区域（参照 Pop-up.svg）
+   ═══════════════════════════════════════════════════════════ */
+.battery-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 12px 8px;
+  background: #3B3E3F;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.battery-popup-title-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.battery-popup-code {
+  font-size: 9px;
+  color: #AAAAAA;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.battery-popup-title {
+  font-size: 18px;
+  color: #FFFFFF;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.battery-popup-close {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  color: #CCCCCC;
+  font-size: 14px;
+  cursor: pointer;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.battery-popup-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   中间白色区域（内容滚动区域）
+   ═══════════════════════════════════════════════════════════ */
+.battery-popup-content {
+  flex: 1;
+  background: #EFEFEF;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+.battery-popup-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.battery-popup-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.battery-popup-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.battery-popup-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Page content */
+.battery-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.battery-page-1,
+.battery-page-2,
+.battery-page-3 {
+  animation: slideIn 0.3s ease-out;
+}
+
+/*Page 1: Overview*/
+.battery-gauge-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+}
+
+.battery-gauge-box {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
+.battery-status-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-label {
+  font-size: 10px;
+  color: #888888;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.status-value {
+  font-size: 14px;
+  color: #333333;
+  font-weight: 700;
+}
+
+.power-negative {
+  color: #FF6B6B !important;
+}
+
+.battery-data-strip {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+}
+
+.data-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.data-label {
+  font-size: 9px;
+  color: #888888;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.data-value {
+  font-size: 13px;
+  color: #333333;
+  font-weight: 700;
+}
+
+.battery-bms-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #FFFFFF;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+}
+
+.bms-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bms-dot.online {
+  background: #4CAF50;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.bms-label {
+  font-size: 10px;
+  color: #555555;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  flex: 1;
+  text-transform: uppercase;
+}
+
+.bms-value {
+  font-size: 12px;
+  color: #666666;
+  font-weight: 600;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Page 2: Energy */
+.energy-chart-section {
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+}
+
+.energy-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 9px;
+  color: #888888;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-size: 12px;
+  color: #333333;
+  font-weight: 700;
+}
+
+.energy-timeline {
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+}
+
+.timeline-title {
+  font-size: 10px;
+  color: #888888;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.timeline-bars {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  height: 80px;
+}
+
+.timeline-bar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.timeline-bar {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #F5F5F5;
+  border: 1px solid #DDD;
+}
+
+.bar-segment {
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.bar-segment.ess {
+  background: #4CAF50;
+}
+
+.bar-segment.engine {
+  background: #FF9800;
+}
+
+.bar-segment.renewable {
+  background: #2196F3;
+}
+
+.timeline-bar-label {
+  font-size: 9px;
+  color: #888888;
+  font-weight: 600;
+}
+
+/* Page 3: Health */
+.health-gauge-section {
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.health-cycles {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFFFFF;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+}
+
+.cycles-label {
+  font-size: 10px;
+  color: #888888;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.cycles-value {
+  font-size: 14px;
+  color: #333333;
+  font-weight: 700;
+}
+
+.health-temperature {
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.temp-label {
+  font-size: 10px;
+  color: #888888;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.temp-gradient {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+}
+
+.temp-min,
+.temp-max {
+  font-size: 9px;
+  color: #666666;
+  font-weight: 600;
+  min-width: 30px;
+}
+
+.gradient-bar {
+  flex: 1;
+  height: 8px;
+  background: linear-gradient(90deg, #4CAF50 0%, #FFC107 50%, #F44336 100%);
+  border-radius: 4px;
+}
+
+.temp-info {
+  font-size: 9px;
+  color: #888888;
+  text-align: center;
+  font-weight: 500;
+}
+
+.alerts-section {
+  background: #FFFFFF;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #DDDDDD;
+}
+
+.alerts-title {
+  font-size: 10px;
+  color: #888888;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.alert-item.warning {
+  background: #FFF3E0;
+  color: #E65100;
+  border-left: 3px solid #FFC107;
+}
+
+.alert-item.success {
+  background: #E8F5E9;
+  color: #2E7D32;
+  border-left: 3px solid #4CAF50;
+}
+
+.alert-item.info {
+  background: #E3F2FD;
+  color: #1565C0;
+  border-left: 3px solid #2196F3;
+}
+
+.alert-time {
+  font-size: 9px;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.alert-msg {
+  flex: 1;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   底部黑色区域（页面导航）
+   ═══════════════════════════════════════════════════════════ */
+.battery-popup-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #262727;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.nav-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #AAAAAA;
+  font-size: 12px;
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.nav-btn:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.page-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.page-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-dot.active {
+  background: #4CAF50;
+  width: 16px;
+  border-radius: 3px;
+}
+
+.page-dot:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.battery-popup-close {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  color: #AAAAAA;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.battery-popup-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+}
+

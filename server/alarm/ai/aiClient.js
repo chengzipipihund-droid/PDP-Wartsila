@@ -79,11 +79,11 @@ function _modelName () {
  *   }[]
  * }
  */
-export async function analyseWithPDF (alarms, onThinkingToken) {
+export async function analyseWithPDF (alarms, onThinkingToken, signal) {
   const manualText               = await getManualText()
   const { systemPrompt, userPrompt } = buildGroupingPrompt(manualText, alarms)
 
-  const raw    = await _callAI(systemPrompt, userPrompt, onThinkingToken)
+  const raw    = await _callAI(systemPrompt, userPrompt, onThinkingToken, signal)
   const result = _parseJSON(raw, 'analyseWithPDF')
 
   // Basic validation
@@ -115,11 +115,11 @@ export async function analyseWithPDF (alarms, onThinkingToken) {
  *   }[]
  * }
  */
-export async function generateReasoning (rootCauseAlarm, suggestion, onThinkingToken) {
+export async function generateReasoning (rootCauseAlarm, suggestion, onThinkingToken, signal) {
   const sensorListText = getSensorListText()
   const { systemPrompt, userPrompt } = buildReasoningPrompt(rootCauseAlarm, suggestion, sensorListText)
 
-  const raw    = await _callAI(systemPrompt, userPrompt, onThinkingToken)
+  const raw    = await _callAI(systemPrompt, userPrompt, onThinkingToken, signal)
   const result = _parseJSON(raw, 'generateReasoning')
 
   // Basic validation
@@ -145,7 +145,7 @@ export async function generateReasoning (rootCauseAlarm, suggestion, onThinkingT
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
-async function _callAI (systemPrompt, userPrompt, onThinkingToken) {
+async function _callAI (systemPrompt, userPrompt, onThinkingToken, signal) {
   const client = getClient()
   const model  = _modelName()
 
@@ -160,12 +160,13 @@ async function _callAI (systemPrompt, userPrompt, onThinkingToken) {
     stream      : true,   // always stream so we can capture thinking tokens
   }
 
-  const stream = await client.chat.completions.create(requestParams)
+  const stream = await client.chat.completions.create(requestParams, { signal })
 
   let fullContent  = ''
   let thinkBuf     = ''
 
   for await (const chunk of stream) {
+    if (signal?.aborted) break
     const delta = chunk.choices[0]?.delta
     if (!delta) continue
 

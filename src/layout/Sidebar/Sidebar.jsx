@@ -1,35 +1,37 @@
 /* ═══════════════════════════════════════════════════════════
    组件：侧边导航栏 | Sidebar Navigation
-   图标按钮：Home / Location / Alarm / Manual / 夜间模式 / 用户
+   图标按钮：Home / Location / Alarm / Portfolio / 夜间模式 / 用户
    ─ Home → navigate to /
    ─ Alarm → navigate to /alarm
+   ─ Portfolio → navigate to /portfolio
    ─ 夜间模式图标有点击功能（切换日/夜主题）
    ═══════════════════════════════════════════════════════════ */
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
-import HomeIcon     from './icons/Home.svg';
-import LocationIcon from './icons/Location.svg';
-import AlarmIcon    from './icons/Alarm.svg';
-import ManualIcon   from './icons/Manual.svg';
-import NightIcon    from './icons/NightMode.svg';
-import UserIcon     from './icons/User.svg';
+import HomeIcon      from './icons/Home.svg';
+import LocationIcon  from './icons/Location.svg';
+import AlarmIcon     from './icons/Alarm.svg';
+import PortfolioIcon from './icons/Portfolio.svg';
+import NightIcon     from './icons/NightMode.svg';
+import UserIcon      from './icons/User.svg';
 
 function Sidebar({ onToggleNight }) {
   const navigate     = useNavigate();
   const { pathname } = useLocation();
 
   const buttons = [
-    { id: 'home',     icon: HomeIcon,     label: null,          onClick: () => navigate('/') },
-    { id: 'location', icon: LocationIcon, label: 'Navigation',  onClick: () => navigate('/nav') },
-    { id: 'alarm',    icon: AlarmIcon,    label: null,          onClick: () => navigate('/alarm') },
-    { id: 'manual',   icon: ManualIcon,   label: null,          onClick: null },
-    { id: 'night',    icon: NightIcon,    label: null,          onClick: onToggleNight },
+    { id: 'home',      icon: HomeIcon,      label: null,         onClick: () => navigate('/') },
+    { id: 'location',  icon: LocationIcon,  label: 'Navigation', onClick: () => navigate('/nav') },
+    { id: 'alarm',     icon: AlarmIcon,     label: null,         onClick: () => navigate('/alarm') },
+    { id: 'portfolio', icon: PortfolioIcon, label: null,         onClick: () => navigate('/portfolio') },
+    { id: 'night',     icon: NightIcon,     label: null,         onClick: onToggleNight },
   ];
 
   const isActive = (id) => {
-    if (id === 'home')     return pathname === '/';
-    if (id === 'alarm')    return pathname.startsWith('/alarm');
-    if (id === 'location') return pathname.startsWith('/nav');
+    if (id === 'home')      return pathname === '/';
+    if (id === 'alarm')     return pathname.startsWith('/alarm');
+    if (id === 'location')  return pathname.startsWith('/nav');
+    if (id === 'portfolio') return pathname.startsWith('/portfolio');
     return false;
   };
 

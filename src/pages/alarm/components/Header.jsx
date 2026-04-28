@@ -1,5 +1,4 @@
 import WartsilaLogo from '@imgs/wartsila_logo.svg'
-import { resetAll } from '../../energy/stores/energyStore'
 import BridgeIcon   from '@imgs/Bridge.svg'
 import ECRIcon      from '@imgs/ECR.svg'
 
@@ -129,81 +128,75 @@ export default function Header({ stats, activeSeverities = new Set(), activeResp
       </div>
 
       {/* ── Stats bar ── */}
-      <div className="flex items-center flex-1 bg-wartsila-black -ml-7 pl-10 pr-5 gap-5 overflow-x-auto">
+      <div className="flex items-center flex-1 bg-wartsila-black -ml-7 pl-10 pr-5 gap-3">
 
-        {/* Total */}
-        <span className="text-white text-sm whitespace-nowrap font-medium">
-          Total:&nbsp;<span className="font-bold">{total}</span>
-        </span>
-
-        <ActiveBlock />
-        <InactiveBlock />
-
-        {/* Bridge */}
-        {showBridge && (
-          <span className="flex items-center gap-1 whitespace-nowrap">
-            <img src={BridgeIcon} alt="Bridge" className="w-5 h-5" />
-            <span className="text-white text-sm font-bold">{bridge}</span>
+        {/* Stats section — shrinks when space is tight */}
+        <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
+          <span className="text-white text-sm whitespace-nowrap font-medium flex-shrink-0">
+            Total:&nbsp;<span className="font-bold">{total}</span>
           </span>
-        )}
 
-        {/* ECR */}
-        {showECR && (
-          <span className="flex items-center gap-1 whitespace-nowrap">
-            <img src={ECRIcon} alt="ECR" className="w-5 h-5" />
-            <span className="text-white text-sm font-bold">{ecr}</span>
+          <ActiveBlock />
+          <InactiveBlock />
+
+          {showBridge && (
+            <span className="flex items-center gap-1 whitespace-nowrap flex-shrink-0">
+              <img src={BridgeIcon} alt="Bridge" className="w-5 h-5" />
+              <span className="text-white text-sm font-bold">{bridge}</span>
+            </span>
+          )}
+
+          {showECR && (
+            <span className="flex items-center gap-1 whitespace-nowrap flex-shrink-0">
+              <img src={ECRIcon} alt="ECR" className="w-5 h-5" />
+              <span className="text-white text-sm font-bold">{ecr}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Buttons section — always visible, never shrinks */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Live temperature (from Arduino/DS18B20) */}
+          <span className="flex items-center gap-1 text-white text-sm font-medium whitespace-nowrap mr-2">
+            <span style={{
+              display: 'inline-block',
+              width: 8, height: 8,
+              borderRadius: '50%',
+              background: sensorTemp != null ? '#22d68a' : '#6b7280',
+              flexShrink: 0,
+            }} />
+            Temp:&nbsp;<span className="font-bold">{sensorTemp != null ? `${sensorTemp.toFixed(2)}°C` : '--'}</span>
           </span>
-        )}
 
-        <span className="flex-1" />
-
-        {/* Live temperature (from Arduino/DS18B20) */}
-        <span className="flex items-center gap-1 text-white text-sm font-medium whitespace-nowrap mr-4">
-          <span style={{
-            display: 'inline-block',
-            width: 8, height: 8,
-            borderRadius: '50%',
-            background: sensorTemp != null ? '#22d68a' : '#6b7280',
-            flexShrink: 0,
-          }} />
-          Temp:&nbsp;<span className="font-bold">{sensorTemp != null ? `${sensorTemp.toFixed(2)}°C` : '--'}</span>
-        </span>
-
-        <button
-          onClick={resetAll}
-          className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
-          style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)' }}
-        >
-          Reset All
-        </button>
-        <button
-          onClick={onSimulateAnomaly}
-          className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
-          style={{ background: '#8B0000', color: '#FFD0D0' }}
-        >
-          ⚡ Simulate Anomaly
-        </button>
-        <button
-          onClick={onReset}
-          className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
-          style={{ background: '#4A5568', color: '#E2E8F0' }}
-        >
-          ↺ Reset
-        </button>
-        <button
-          onClick={onClearAll}
-          className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
-          style={{ background: '#2D3748', color: '#E2E8F0' }}
-        >
-          ✕ Clear All
-        </button>
-        <button
-          onClick={onOpenDatabase}
-          className="text-xs font-medium px-3 py-1 rounded flex-shrink-0 transition-colors"
-          style={{ background: '#5A5C5E', color: '#E0E0E0' }}
-        >
-          Database
-        </button>
+          <button
+            onClick={onSimulateAnomaly}
+            className="text-xs font-medium px-3 py-1 rounded transition-colors"
+            style={{ background: '#8B0000', color: '#FFD0D0' }}
+          >
+            ⚡ Simulate Anomaly
+          </button>
+          <button
+            onClick={onReset}
+            className="text-xs font-medium px-3 py-1 rounded transition-colors"
+            style={{ background: '#4A5568', color: '#E2E8F0' }}
+          >
+            ↺ Reset
+          </button>
+          <button
+            onClick={onClearAll}
+            className="text-xs font-medium px-3 py-1 rounded transition-colors"
+            style={{ background: '#2D3748', color: '#E2E8F0' }}
+          >
+            ✕ Clear All
+          </button>
+          <button
+            onClick={onOpenDatabase}
+            className="text-xs font-medium px-3 py-1 rounded transition-colors"
+            style={{ background: '#5A5C5E', color: '#E0E0E0' }}
+          >
+            Database
+          </button>
+        </div>
 
       </div>
     </header>

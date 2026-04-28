@@ -14,7 +14,6 @@ import { ReadlineParser } from '@serialport/parser-readline'
 
 // ─── Config ────────────────────────────────────────────────────────────────
 const POLL_INTERVAL_MS   = 1000   // read sensor every 1 second (fallback)
-const NORMAL_TEMP        = 20     // °C, normal operating temperature (fallback)
 const ANOMALY_THRESHOLD  = 26     // °C, above this → anomaly
 const ANOMALY_DURATION   = 3      // must exceed threshold for N consecutive reads to confirm
 const SERIAL_PORT        = process.env.SENSOR_SERIAL_PORT || 'COM3'
@@ -82,10 +81,14 @@ class SensorSimulator extends EventEmitter {
   /**
    * Manually inject an anomaly — useful for demo / testing.
    * Call this from a REST endpoint: POST /api/ai/simulate-anomaly
+   * NOTE: deliberately does NOT update currentTemp/lastTempAt so the
+   * injected value is never shown in the temperature display.
    */
   injectAnomaly (temp = 97) {
     console.log('[SensorSimulator] Manual anomaly injected, temp =', temp)
-    this._setTemp(temp)
+    // Only trigger anomaly evaluation — don't update sensor display state
+    const reading = { temp, timestamp: new Date().toISOString() }
+    this._evaluate(reading, true)
   }
 
   /**
@@ -103,7 +106,8 @@ class SensorSimulator extends EventEmitter {
   reset () {
     this.consecutiveHigh = 0
     this.anomalyFired    = false
-    this.currentTemp     = NORMAL_TEMP
+    this.currentTemp     = null
+    this.lastTempAt      = null   // clear staleness so next _readSensor returns null, not a fake value
     console.log('[SensorSimulator] Reset — ready for next episode')
   }
 

@@ -31,7 +31,7 @@ export function setupAI (app, wss) {
   }
 
   // ── Wire sequencer (listens to sensorSimulator events) ────────────────────
-  new AlarmSequencer(wss, store)
+  const sequencer = new AlarmSequencer(wss, store)
 
   // Register catch-up hook: replay current AI state to newly connected clients ──
   setNewClientHook(() => {
@@ -100,6 +100,15 @@ export function setupAI (app, wss) {
    * Manually inject an anomaly — use this button in the demo.
    * Body: { temp?: number }   (default 97°C)
    */
+  /**
+   * POST /api/ai/cancel
+   * Aborts any in-progress Ollama inference immediately.
+   */
+  app.post('/api/ai/cancel', (_req, res) => {
+    sequencer.cancel()
+    res.json({ ok: true })
+  })
+
   app.post('/api/ai/simulate-anomaly', (req, res) => {
     const temp = Number(req.body?.temp) || 97
     sensorSimulator.injectAnomaly(temp)

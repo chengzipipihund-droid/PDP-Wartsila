@@ -366,6 +366,8 @@ function AlarmApp() {
 
   // ── Clear all alarms ─────────────────────────────────────
   const handleClearAll = async () => {
+    // Cancel any in-progress Ollama inference before wiping state
+    await fetch('/api/ai/cancel', { method: 'POST' }).catch(() => {})
     await fetch('/api/alarms/clear-all', { method: 'POST' }).catch(() => {})
     // CLEAR_ALL WS message will update state
   }

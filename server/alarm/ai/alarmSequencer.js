@@ -35,9 +35,18 @@ const INTERVAL_MS = 1000
  */
 export class AlarmSequencer {
   constructor (wss, store) {
-    this.wss   = wss
-    this.store = store
+    this.wss              = wss
+    this.store            = store
+    this._abortController = null
     this._bind()
+  }
+
+  cancel () {
+    if (this._abortController) {
+      this._abortController.abort()
+      this._abortController = null
+      console.log('[AlarmSequencer] AI inference cancelled')
+    }
   }
 
   _bind () {
@@ -98,10 +107,16 @@ export class AlarmSequencer {
   }
 
   async _runAnalysis (alarms) {
+    this._abortController = new AbortController()
+    const { signal } = this._abortController
+
     try {
       const result = await analyseWithPDF(alarms, (token) => {
         this._broadcast({ type: 'AI_THINKING_TOKEN', token })
-      })
+      }, signal)
+
+      if (signal.aborted) return
+
       this.store.aiGroupResult = result
 
       console.log('[AlarmSequencer] AI analysis complete, broadcasting result')
@@ -112,12 +127,9 @@ export class AlarmSequencer {
       })
 
       // ── Phase 2: confidence + reasoning per suggestion ────────────────────
-      // Run after Phase 1 so the banner can show "ready" while Phase 2 loads
-      // Phase 2: Process all suggestions in PARALLEL
       const rootCauseAlarm = alarms.find(a => a.isRootCause) ?? alarms[0]
       const suggestions = result.suggestions ?? []
-      
-      // Broadcast the start of parallel processing for all suggestions
+
       suggestions.forEach((suggestion, i) => {
         this._broadcast({
           type            : 'AI_SUGGESTION_THINKING_START',
@@ -128,18 +140,18 @@ export class AlarmSequencer {
           rootCauseId     : result.rootCauseId,
         })
       })
-      
+
       console.log('[AlarmSequencer] Generating reasoning for all', suggestions.length, 'suggestions (parallel)')
-      
-      // Run all suggestions in parallel using Promise.all()
+
       const reasoningPromises = suggestions.map((suggestion, i) => {
         const startTime = Date.now()
         console.log(`[AlarmSequencer] START reasoning #${i + 1} (${suggestion.id})`)
-        
+
         return generateReasoning(rootCauseAlarm, suggestion, (token) => {
           this._broadcast({ type: 'AI_THINKING_TOKEN', token, phase: 2, suggestionId: suggestion.id })
-        })
+        }, signal)
         .then(reasoning => {
+          if (signal.aborted) return
           const elapsed = Date.now() - startTime
           console.log(`[AlarmSequencer] FINISH reasoning #${i + 1} (${suggestion.id}) after ${elapsed}ms`)
           this._broadcast({
@@ -150,7 +162,6 @@ export class AlarmSequencer {
             reasoning   : reasoning.reasoning,
             sensorData  : reasoning.sensorData,
           })
-          // Persist so new clients can catch up
           if (!this.store.aiReasonings) this.store.aiReasonings = {}
           this.store.aiReasonings[suggestion.id] = {
             confidence : reasoning.confidence,
@@ -160,8 +171,8 @@ export class AlarmSequencer {
           console.log('[AlarmSequencer] Reasoning ready for', suggestion.id, '| confidence:', reasoning.confidence)
         })
         .catch(err => {
+          if (signal.aborted) return  // silently swallow abort errors
           console.error('[AlarmSequencer] generateReasoning failed for', suggestion.id, ':', err.message)
-          // Still broadcast so the counter doesn't stall
           this._broadcast({
             type        : 'AI_REASONING_READY',
             suggestionId: suggestion.id,
@@ -172,14 +183,19 @@ export class AlarmSequencer {
           })
         })
       })
-      
-      // Wait for all to complete
+
       await Promise.all(reasoningPromises)
-      // All suggestions done → banner can show "ready"
+
+      if (signal.aborted) return
+
       this._broadcast({ type: 'AI_SUGGESTIONS_READY' })
       console.log('[AlarmSequencer] All suggestions ready')
       this.store.aiSuggestionsReady = true
     } catch (err) {
+      if (signal.aborted) {
+        console.log('[AlarmSequencer] AI inference aborted cleanly')
+        return
+      }
       console.error('[AlarmSequencer] AI analysis failed:', err.message)
       this._broadcast({
         type  : 'AI_ANALYSIS_FAILED',

@@ -1,3 +1,5 @@
+# control/lever.py
+
 def clamp(x, lo, hi):
     return max(lo, min(hi, x))
 
@@ -16,16 +18,6 @@ def servo_angle_from_percent(percent):
 
 def apply_ml_model(registers):
     """
-    ML model hook — receives BCU register values, returns adjusted values.
-
-    Swap the body with your trained model:
-
-        from joblib import load
-        _model = load("model.pkl")
-
-        def apply_ml_model(registers):
-            return _model.predict([registers])[0].tolist()
-
-    Until a model is loaded this is a passthrough.
+    ML hook (currently passthrough)
     """
     return registers
