@@ -157,6 +157,13 @@ class SensorSimulator extends EventEmitter {
         this.emit('serial-status', { connected: true, message: 'Connected' })
       })
 
+      this.serialPort.on('close', () => {
+        console.warn('[SensorSimulator] Serial port closed (device disconnected):', SERIAL_PORT)
+        this.serialReady = false
+        this.emit('serial-status', { connected: false, message: 'Disconnected' })
+        this._scheduleSerialRetry()
+      })
+
       this.serialPort.on('error', err => {
         console.warn('[SensorSimulator] Serial port error:', err.message)
         this.serialReady = false
