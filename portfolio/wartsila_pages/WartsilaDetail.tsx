@@ -32,7 +32,7 @@ export default function WartsilaDetail() {
             loop
             muted
             playsInline
-            className="h-[85%] w-auto rounded-md shadow-lg"
+            className="h-full w-auto rounded-md shadow-lg"
           />
         </div>
 
