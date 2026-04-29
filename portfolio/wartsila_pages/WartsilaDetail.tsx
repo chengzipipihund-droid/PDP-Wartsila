@@ -8,7 +8,7 @@ import AlarmAiSuggestedAction from '../wartsila_components/AlarmAiSuggestedActio
 import Ai from '../wartsila_components/Ai';
 import DemoDay from '../wartsila_components/DemoDay';
 import UserTest from '../wartsila_components/UserTest';
-import teaserVideo from '../wartsila_images/header/cover.mov';
+const teaserVideo = 'https://res.cloudinary.com/dye5jmqez/video/upload/v1777468318/cover_fw6qbt.mov';
 import teaserImage from '../wartsila_images/header/Video_Teaser 1.png';
 import pdpLogo from '../wartsila_images/header/pdp_logo.svg';
 
