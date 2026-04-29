@@ -1,0 +1,226 @@
+/* ── Engine Detail Panel ──────────────────────────────────
+   Matches ME1.svg layout (255×128):
+   Top row: [ME1 badge] [RUN badge] [model text]
+   Body:    [arrow col] [engine icon] [capacity bar]
+   ───────────────────────────────────────────────────────── */
+
+.engine-detail-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #F7F7F7;
+  border: 1px solid black;
+  border-radius: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ── Top row ── */
+.detail-top-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px 2px;
+  flex-shrink: 0;
+}
+
+/* Engine number badge: outline style, black text (matches Engine Number.svg) */
+.engine-num-badge {
+  display: inline-block;
+  border: 1px solid black;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: bold;
+  color: black;
+  line-height: 1.5;
+  white-space: nowrap;
+  font-family: monospace;
+}
+
+/* Status badge: filled pill (matches Engine-Status-Run / Standby SVGs) */
+.engine-status-badge {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.engine-status-badge.status-run    { background: #4FBF65; }
+.engine-status-badge.status-stop   { background: #999999; }
+.engine-status-badge.status-fault  {
+  background: #E71F19;
+  animation: pulse-fault 2s ease-in-out infinite;
+}
+
+@keyframes pulse-fault {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
+
+/* Model name text */
+.engine-model-text {
+  font-size: 9px;
+  color: #555;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Main body ── */
+.detail-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 2px 8px 4px;
+  gap: 6px;
+  align-items: stretch;
+}
+
+/* Left: arrow column (~34px wide) */
+.detail-arrow-col {
+  width: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.energy-arrow-img {
+  width: 28px;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Center: engine icon — top aligned, shifted up to match bar */
+.detail-icon-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: -10px;
+}
+
+/* 1.5× natural size (151×97 → ~227×145), capped so body stays ≤100px */
+.engine-icon-img {
+  width: auto;
+  height: 100%;
+  max-height: 135px;  /* 90 × 1.5 */
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  transform: translateX(-15px);
+}
+
+/* Right: capacity column — shifted up same as icon column so tops align */
+.detail-capacity-col {
+  width: 22px;       /* bar 12px + 6px arrow + 4px margin */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: -10px; /* same shift as icon col → tops align */
+}
+
+/* Bar wrapper fills the full column height */
+.cap-bar-wrap {
+  flex: 1;
+  position: relative;
+  width: 12px;
+  margin-right: 8px; /* room for marker arrow */
+}
+
+/* Background track */
+.cap-bar-bg {
+  position: absolute;
+  inset: 0;
+  background: #EFEFEF;
+  border: 0.5px solid #53575A;
+  overflow: visible;
+}
+
+/* Fill — bottom-aligned dark gray */
+.cap-bar-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #53575A;
+  transition: height 0.5s ease;
+}
+
+/* Marker arrow — left-pointing triangle at fill level */
+.cap-marker {
+  position: absolute;
+  left: 100%;
+  width: 0;
+  height: 0;
+  border-top:    3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  border-right:  6px solid #53575A;
+}
+
+/* % value overlaid at top of bar */
+.cap-value-overlay {
+  position: absolute;
+  top: 2px;
+  right: calc(100% + 4px);
+  font-size: 14px;
+  font-weight: bold;
+  color: #53575A;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* "Capacity" label overlaid at bottom of bar */
+.cap-label-overlay {
+  position: absolute;
+  bottom: 2px;
+  right: calc(100% + 4px);
+  font-size: 12px;
+  color: #53575A;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Load Metric overlay on Engine Icon ── */
+.load-metric {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(247, 247, 247, 0.85);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.load-label {
+  font-size: 8px;
+  font-weight: 800;
+  color: #888;
+  letter-spacing: 0.5px;
+}
+
+.load-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #333;
+  line-height: 1;
+}

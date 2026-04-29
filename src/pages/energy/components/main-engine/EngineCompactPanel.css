@@ -1,0 +1,71 @@
+/* ── Engine Compact Panel ─────────────────────────────────
+   Matches ME2.svg layout (147×35):
+   [ME2 badge]  [RUN badge]              [›]
+   ───────────────────────────────────────────────────────── */
+
+.engine-compact-panel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  height: 100%;
+  background: #EFEFEF;
+  border: 1px solid black;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+  box-sizing: border-box;
+}
+
+.engine-compact-panel:hover {
+  background: #E0E0E0;
+}
+
+.engine-compact-panel:focus {
+  outline: 2px solid #4FBF65;
+  outline-offset: 1px;
+}
+
+/* Engine number badge: outline style (matches Engine Number.svg) */
+.compact-num-badge {
+  display: inline-block;
+  border: 1px solid black;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: bold;
+  color: black;
+  line-height: 1.5;
+  white-space: nowrap;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+/* Status badge: filled pill */
+.compact-status-badge {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  line-height: 1.5;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.compact-status-badge.status-run   { background: #4FBF65; }
+.compact-status-badge.status-stop  { background: #999999; }
+.compact-status-badge.status-fault { background: #E71F19; }
+
+/* Expand arrow: pushed to right (matches ME2.svg right triangle) */
+.compact-expand-arrow {
+  margin-left: auto;
+  color: #626262;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: bold;
+  flex-shrink: 0;
+}
