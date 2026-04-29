@@ -1,7 +1,7 @@
 import React from 'react';
 import groupedImgDesktop from '../wartsila_images/grouped/grouped_example.svg';
 import groupedImgMobile from '../wartsila_images/grouped/grouped_example_phone.png';
-import groupedDemoGif from '../wartsila_images/grouped/Grouped VIew - Alarm.gif';
+import groupedDemoGif from '../wartsila_images/grouped/Grouped View - Alarm.gif';
 import prototypeImg from '../wartsila_images/grouped/grouped_prototype.png';
 
 export default function AlarmGroupedView() {
