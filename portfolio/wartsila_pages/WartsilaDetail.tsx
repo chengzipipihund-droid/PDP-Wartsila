@@ -6,6 +6,7 @@ import Benchmarking from '../wartsila_components/AlarmBenchmarking';
 import AlarmGroupedView from '../wartsila_components/AlarmGroupedView';
 import AlarmAiSuggestedAction from '../wartsila_components/AlarmAiSuggestedAction';
 import Ai from '../wartsila_components/Ai';
+import EnergyContent from '../wartsila_components/EnergyContent';
 import DemoDay from '../wartsila_components/DemoDay';
 import UserTest from '../wartsila_components/UserTest';
 const teaserVideo = 'https://res.cloudinary.com/dye5jmqez/video/upload/v1777468318/cover_fw6qbt.mov';
@@ -63,6 +64,10 @@ export default function WartsilaDetail() {
               <AlarmAiSuggestedAction />
               <Ai />
             </>
+          )}
+
+          {activeScope === 'energy' && (
+            <EnergyContent />
           )}
 
           {/* Shown for both alarm and energy activeScope */}
