@@ -14,6 +14,7 @@ import EnergyPanel from './components/energy/EnergyPanel';
 import CheckpointPopup from './components/overlay/CheckpointPopup';
 import ArrivalOverlay from './components/overlay/ArrivalOverlay';
 import Sidebar from '../../layout/Sidebar/Sidebar';
+import { startEnergyLoop } from '../energy/stores/energyStore';
 import './styles/global.css';
 
 export default function NavPage() {
@@ -21,6 +22,9 @@ export default function NavPage() {
   useKeyboardSim(!wsConnected); // keyboard sim only when no hardware WS
   useGameLoop();
   useBCUControl();              // feed BCU lever data into ship physics
+
+  // Nav's energy + lever panels read the energy store, so drive it here too.
+  useEffect(() => startEnergyLoop(), []);
 
   // AI advisor interval (~1.5s)
   const addLog = useStore(s => s.addLog);

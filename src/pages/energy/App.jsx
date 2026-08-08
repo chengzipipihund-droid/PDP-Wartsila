@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import useLeverHardware from '../../shared/hooks/useLeverHardware';
-import { useEnergyStore, setManualLever } from './stores/energyStore';
+import { useEnergyStore, setManualLever, startEnergyLoop } from './stores/energyStore';
 import Header from './components/header/Header';
 import Sidebar from '../../layout/Sidebar/Sidebar';
 import BottomBar from './components/bottombar/BottomBar';
@@ -34,6 +34,9 @@ function App() {
   // ── Real-time hardware lever data (always running in background) ──
   const leverHardware = useLeverHardware();
 
+  // ── Drive the energy plant while this page is mounted ──
+  useEffect(() => startEnergyLoop(), []);
+
   // Feed manual lever position into the persistent energy store
   useEffect(() => {
     setManualLever(mode === 'manual' ? manualLeverPos : null);
@@ -42,10 +45,7 @@ function App() {
   return (
     <div className={`dashboard ${nightMode ? 'night' : 'day'}`}>
       <Header alarm={alarm} />
-      <Sidebar
-        nightMode={nightMode}
-        onToggleNight={() => setNightMode(!nightMode)}
-      />
+      <Sidebar onToggleNight={() => setNightMode(!nightMode)} />
       <main className="body">
         {/* ── Dashboard content (normal or eco mode) ── */}
         <div className="body-content" style={{ position: 'relative' }}>

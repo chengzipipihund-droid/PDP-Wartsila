@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../stores/useShipStore';
 
-const WS_URL = 'ws://localhost:3001'; // ← Change to controller PC LAN IP
+// Derive from the page origin so this works over the Vite dev proxy, on a LAN
+// IP, and behind HTTPS — instead of hardcoding a host that only exists locally.
+function wsUrl() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${proto}://${location.host}/ws`;
+}
+
+const RECONNECT_MIN_MS = 2000;
+const RECONNECT_MAX_MS = 30000;   // back off instead of hammering a dead host
 
 export function useWebSocket() {
   const ws = useRef(null);
@@ -11,13 +19,23 @@ export function useWebSocket() {
 
   useEffect(() => {
     let reconnectTimer;
+    let retryDelay = RECONNECT_MIN_MS;
+    let closed = false;
+
+    function scheduleReconnect() {
+      if (closed) return;
+      reconnectTimer = setTimeout(connect, retryDelay);
+      retryDelay = Math.min(retryDelay * 2, RECONNECT_MAX_MS);
+    }
 
     function connect() {
+      if (closed) return;
       try {
-        ws.current = new WebSocket(WS_URL);
+        ws.current = new WebSocket(wsUrl());
 
         ws.current.onopen = () => {
           setConnected(true);
+          retryDelay = RECONNECT_MIN_MS;   // reset backoff on a good connection
           addLog('Controller connected via WebSocket', 'i');
         };
 
@@ -33,17 +51,18 @@ export function useWebSocket() {
 
         ws.current.onclose = () => {
           setConnected(false);
-          reconnectTimer = setTimeout(connect, 2000);
+          scheduleReconnect();
         };
 
         ws.current.onerror = () => ws.current.close();
       } catch {
-        reconnectTimer = setTimeout(connect, 2000);
+        scheduleReconnect();
       }
     }
 
     connect();
     return () => {
+      closed = true;
       clearTimeout(reconnectTimer);
       ws.current?.close();
     };

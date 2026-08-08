@@ -5,7 +5,7 @@ import App from './pages/energy/App.jsx'
 import AlarmApp from './pages/alarm/AlarmApp.jsx'
 import MobileApp from './pages/alarm/MobileApp.jsx'
 import NavPage from './pages/nav/NavPage.jsx'
-import PortfolioPage from './Pages/portfolio/PortfolioPage.jsx'
+import PortfolioPage from './pages/portfolio/PortfolioPage.jsx'
 import './index.css'
 
 const isPortfolioOnly = import.meta.env.VITE_PORTFOLIO_ONLY === 'true'
