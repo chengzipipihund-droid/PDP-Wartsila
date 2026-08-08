@@ -11,9 +11,9 @@
    • Lever canvas responds to hardware movements
    ═══════════════════════════════════════════════════════════ */
 import { useState, useCallback } from "react";
-import LeverCanvas from "../lever-app/src/components/LeverCanvas.jsx";
-import AIMarker from "../lever-app/src/components/AIMarker.jsx";
-import LeverController from "../lever-app/src/components/LeverController.jsx";
+import LeverCanvas from "./lever/LeverCanvas.jsx";
+import AIMarker from "./lever/AIMarker.jsx";
+import LeverController from "./lever/LeverController.jsx";
 
 import LeverIconSvg    from "./icon/LeverIcon.svg";
 import EnergyIconSvg   from "./icon/EnergyIcon.svg";
